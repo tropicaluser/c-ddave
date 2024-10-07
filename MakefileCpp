@@ -1,0 +1,21 @@
+CXX = g++
+INCS = -IC:\MinGW_SDL\include\SDL2
+LIBS = -LC:\MinGW_SDL\lib
+CXXFLAGS = -std=c++11 -Wall
+LFLAGS = -lmingw32 -lSDL2main -lSDL2
+
+SRC_C = ./common/common.c
+SRC_CPP_MAIN = ./cpp/tiles.cpp   # Change here
+OBJ_C = ./common/common.o
+OBJ_CPP_MAIN = TILES.exe   # Change here
+
+all: $(OBJ_CPP_MAIN)
+
+$(OBJ_C): $(SRC_C)
+	$(CXX) $(CXXFLAGS) $(INCS) -c $< -o $@
+
+$(OBJ_CPP_MAIN): $(SRC_CPP_MAIN) $(OBJ_C)
+	$(CXX) $(SRC_CPP_MAIN) $(OBJ_C) $(INCS) $(LIBS) $(CXXFLAGS) $(LFLAGS) -o $@
+
+clean:
+	rm -f $(OBJ_C) $(OBJ_CPP_MAIN)
