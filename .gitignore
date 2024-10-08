@@ -1,2 +1,6 @@
 TILES.EXE
+LEVEL.EXE
 /bitmaps
+
+*.dat
+*.bmp

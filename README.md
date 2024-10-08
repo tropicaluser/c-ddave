@@ -53,4 +53,5 @@ mingw32-make
 or
 mingw32-make -f MakefileCpp
 ./TILES
+./LEVEL
 ```

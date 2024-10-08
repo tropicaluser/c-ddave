@@ -1,21 +1,45 @@
+# Compiler
 CXX = g++
+
+# Include and Library paths
 INCS = -IC:\MinGW_SDL\include\SDL2
 LIBS = -LC:\MinGW_SDL\lib
+
+# Compiler Flags
 CXXFLAGS = -std=c++11 -Wall
+
+# Linker Flags
 LFLAGS = -lmingw32 -lSDL2main -lSDL2
 
+# Source files
 SRC_C = ./common/common.c
-SRC_CPP_MAIN = ./cpp/tiles.cpp   # Change here
+SRC_CPP_TILES = ./cpp/tiles.cpp   # Change here
+SRC_CPP_LEVEL = ./cpp/level.cpp   # Change here
+
+# Object files
 OBJ_C = ./common/common.o
-OBJ_CPP_MAIN = TILES.exe   # Change here
+OBJ_CPP_TILES = tiles.o             # Object file for tiles
+OBJ_CPP_LEVEL = level.o             # Object file for level
 
-all: $(OBJ_CPP_MAIN)
+# Executable names
+EXE_TILES = tiles.exe
+EXE_LEVEL = level.exe
 
+# Targets
+all: $(EXE_TILES) $(EXE_LEVEL)
+
+# Rule to compile common.c
 $(OBJ_C): $(SRC_C)
 	$(CXX) $(CXXFLAGS) $(INCS) -c $< -o $@
 
-$(OBJ_CPP_MAIN): $(SRC_CPP_MAIN) $(OBJ_C)
-	$(CXX) $(SRC_CPP_MAIN) $(OBJ_C) $(INCS) $(LIBS) $(CXXFLAGS) $(LFLAGS) -o $@
+# Rule to compile tiles.cpp
+$(EXE_TILES): $(SRC_CPP_TILES) $(OBJ_C)
+	$(CXX) $(SRC_CPP_TILES) $(OBJ_C) $(INCS) $(LIBS) $(CXXFLAGS) $(LFLAGS) -o $@
 
+# Rule to compile level.cpp
+$(EXE_LEVEL): $(SRC_CPP_LEVEL) $(OBJ_C)
+	$(CXX) $(SRC_CPP_LEVEL) $(OBJ_C) $(INCS) $(LIBS) $(CXXFLAGS) $(LFLAGS) -o $@
+
+# Clean up build files
 clean:
-	rm -f $(OBJ_C) $(OBJ_CPP_MAIN)
+	rm -f $(OBJ_C) $(EXE_TILES) $(EXE_LEVEL) $(OBJ_CPP_TILES) $(OBJ_CPP_LEVEL)
