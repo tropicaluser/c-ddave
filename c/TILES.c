@@ -1,174 +1,136 @@
-#include <stdio.h>   /* Opening Files */
-#include <string.h>  /* Manipulating Strings */
-#include <stdint.h>  /* Fixed-width data types (C99) */
+#include <stdio.h>  /* Opening Files */
+#include <string.h> /* Manipulating Strings */
+#include <stdint.h> /* Fixed-width data types (C99) */
 #include <stdlib.h>
-#include <SDL.h>     /* Using SDL data structure */
+#include <SDL.h>      /* Using SDL data structure */
 #include <sys/stat.h> /* For creating directories */
 #include "../common/common.h"
 
-int main(int argc, char* argv[])
+/**
+ * @brief Reads and decodes VGA pixel data from a file using RLE (Run-Length Encoding).
+ *
+ * This function moves to the specified VGA data address within a file, reads the RLE-compressed data,
+ * decodes it, and stores the decompressed pixel data in the provided output buffer. The compression
+ * follows the Keen 1-3 RLE format, as described in the links below:
+ *
+ * - Compression Overview: https://moddingwiki.shikadi.net/wiki/Dangerous_Dave_Tileset_Format
+ * - Keen 1-3 RLE Compression Details: https://moddingwiki.shikadi.net/wiki/Keen_1-3_RLE_compression
+ *
+ * @param fin Pointer to the file from which the VGA data is to be read.
+ * @param vga_data_addr The address where the VGA data begins within the file.
+ * @param out_data A buffer to store the decoded pixel data.
+ * @return The size (in bytes) of the decoded pixel data.
+ */
+uint32_t decode_vga_data(FILE *fin, uint32_t vga_data_addr, unsigned char *out_data)
 {
-    hello_world();
+    fseek(fin, vga_data_addr, SEEK_SET); /* Move the file pointer to the specified VGA data address. */
+    uint32_t final_length = 0;           /* Variable to track the length of the currently decoded data.*/
 
-    printf("Starting the extraction process...\n");
+    /* Read the first 4 bytes to get the length of the uncompressed data.
+        bitwise OR combined with left bit shift */
+    /* final_length |= fgetc(fin);       // Read the first byte (least significant byte).
+    final_length |= fgetc(fin) << 8;  // Read the second byte and shift it left by 8 bits.
+    final_length |= fgetc(fin) << 16; // Read the third byte and shift it left by 16 bits.
+    final_length |= fgetc(fin) << 24; // Read the fourth byte and shift it left by 24 bits. */
+    fread(&final_length, sizeof(final_length), 1, fin);
 
-    const uint32_t vga_data_addr = 0x120f0;
-    const uint32_t vga_pal_addr = 0x26b0a;
-
-    /* Open EXE File and go to VGA pixel data */
-    FILE *fin;
-    fin = fopen("DAVE.EXE", "rb");
-    if (!fin) {
-        printf("Failed to open DAVE.EXE. Please ensure the file is in the same directory.\n");
-        return -1;
-    }
-    fseek(fin, vga_data_addr, SEEK_SET);
-
-    /* Undo RLE and read all pixel data */
-    /* Read file length - first 4 bytes LE */
-    uint32_t final_length = 0;
-    final_length |= fgetc(fin);
-    final_length |= fgetc(fin) << 8;
-    final_length |= fgetc(fin) << 16;
-    final_length |= fgetc(fin) << 24;
-
-    /* Read each byte and un-encode */
+    // Variable to track the length of the currently decoded data.
     uint32_t current_length = 0;
-    unsigned char out_data[150000] = {0};
     uint8_t byte_buffer;
 
-    while (current_length < final_length) {
+    // Continue decoding until the entire uncompressed length is reached.
+    while (current_length < final_length)
+    {
+        // Read the next byte from the file.
         byte_buffer = fgetc(fin);
-        if (byte_buffer & 0x80) {
+
+        // If the high bit (0x80) is set, this indicates a run of unique bytes.
+        if (byte_buffer & 0x80)
+        {
+            // Clear the high bit and increment the value by 1 to get the count of bytes.
             byte_buffer &= 0x7F;
             byte_buffer++;
-            while (byte_buffer) {
+
+            while (byte_buffer) /* Read and store the specified number of unique bytes directly into out_data. */
+            {
                 out_data[current_length++] = fgetc(fin);
                 byte_buffer--;
             }
-        } else {
-            byte_buffer += 3;
-            char next = fgetc(fin);
-            while (byte_buffer) {
+        }
+
+        else /* Otherwise, it's a run-length encoded sequence */
+        {
+            byte_buffer += 3;       /* Add 3 to the value, which gives the count of repeated bytes. */
+            char next = fgetc(fin); /* Read the next byte, which will be repeated for the specified count. */
+
+            while (byte_buffer) /* Store the repeated byte in out_data for the specified count.*/
+            {
                 out_data[current_length++] = next;
                 byte_buffer--;
             }
         }
     }
 
-    /* Read in VGA Palette. 256-color of 3 bytes (RGB) */
-    fseek(fin, vga_pal_addr, SEEK_SET);
+    // Return the total length of the decoded data.
+    return final_length;
+}
+
+/**
+ * @brief open exe file
+ *
+ * @param filename
+ * @return FILE*
+ */
+
+int main(int argc, char *argv[])
+{
+    /* https://moddingwiki.shikadi.net/wiki/Dangerous_Dave - File formats */
+    printf("Starting the extraction process...\n");
+
+    // variables
+    const uint32_t vga_data_addr = 0x120f0; /* 0x120f0 - Dangerous Dave Tileset Format - VGA tiles */
+    const uint32_t vga_pal_addr = 0x26b0a;  /* 0x26b0a - VGA Palette	6-bit RGB */
+    unsigned char out_data[150000] = {0};   /* Buffer to hold all pixel data */
     uint8_t palette[768];
-    uint32_t i, j;
-    for (i = 0; i < 256; i++) {
-        for (j = 0; j < 3; j++) {
-            palette[i * 3 + j] = fgetc(fin);
-            palette[i * 3 + j] <<= 2;
-        }
-    }
+    FILE *fin;             /* File pointer for the EXE file */
+    uint32_t final_length; /* final length of decoded data */
+    uint32_t tile_count;   /* number of tiles */
+
+    // Assign values to constants
+    fin = open_exe_file("DAVE.EXE");                              /* Open EXE File and go to VGA pixel data */
+    final_length = decode_vga_data(fin, vga_data_addr, out_data); /* Undo RLE-compression and read all pixel data */
+    read_vga_palette(fin, vga_pal_addr, palette);                 /* Read in VGA Palette. 256-color of 3 bytes (RGB) */
 
     fclose(fin);
 
-    /* Create the bitmaps directory if it doesn't exist */
-    struct stat st = {0};
-    if (stat("bitmaps", &st) == -1) {
-        #ifdef _WIN32
-            mkdir("bitmaps");
-        #else 
-            mkdir("bitmaps", 0700);
-        #endif
-    }
+    printf("Decoded %d bytes of data.\n", final_length);
+    printf("palette[0] = %d\n", palette[6]);
 
-    /* Get total tile count from first byte */
-    uint32_t tile_count = 0;
-    tile_count |= out_data[3] << 24;
-    tile_count |= out_data[2] << 16;
-    tile_count |= out_data[1] << 8;
-    tile_count |= out_data[0];
+    create_directory(FOLDER_TILESET); /* Create the tileset directory if it doesn't exist */
 
-    /* Each in offset index for each tile */
+    tile_count = get_tile_count(out_data); /* Get number of tiles */
+
     uint32_t tile_index[500] = {0};
-    for (i = 0; i < tile_count; i++) {
-        tile_index[i] |= out_data[i * 4 + 4];
-        tile_index[i] |= out_data[i * 4 + 5] << 8;
-        tile_index[i] |= out_data[i * 4 + 6] << 16;
-        tile_index[i] |= out_data[i * 4 + 7] << 24;
-        //printf("%d\n", tile_index[i]);
-    }
+    get_tile_indices(out_data, tile_index, tile_count); /* Get tile indices */
 
-    /* The last tile ends at EOF */
-    tile_index[i] = final_length;
+    tile_index[tile_count] = final_length; /* The last tile ends at EOF.*/
 
-    /* Go through each tile and create separate file */
-    uint16_t tile_width;
-    uint16_t tile_height;
-    uint32_t current_byte;
-    uint32_t current_tile_byte;
-    uint8_t current_tile;
+    // Process each tile
+    for (uint32_t current_tile = 0; current_tile < tile_count; current_tile++)
+    {
+        uint32_t current_byte = tile_index[current_tile];
+        uint16_t tile_width, tile_height;
 
-    for (current_tile = 0; current_tile < tile_count; current_tile++) {
-        current_tile_byte = 0;
-        current_byte = tile_index[current_tile];
+        // Get the dimensions for the current tile
+        get_tile_dimensions(out_data, &current_byte, &tile_width, &tile_height);
 
-        /* Assume 16x16 */
-        tile_width = 16;
-        tile_height = 16;
-
-        /* Skip unusual byte */
-        if (current_byte > 65280)
-            current_byte++;
-
-        /* Read first 4 bytes for possible custom dimensions */
-        if (out_data[current_byte + 1] == 0 && out_data[current_byte + 3] == 0) {
-            if (out_data[current_byte] > 0 && out_data[current_byte] < 0xBf &&
-                out_data[current_byte + 2] > 0 && out_data[current_byte + 2] < 0x64) {
-                tile_width = out_data[current_byte];
-                tile_height = out_data[current_byte + 2];
-                current_byte += 4;
-            }
+        // Create and fill the surface
+        SDL_Surface *surface = create_and_fill_surface(out_data, &current_byte, tile_width, tile_height, palette);
+        if (surface)
+        {
+            // Save the tile to file
+            save_tile_to_file(surface, current_tile);
         }
-
-        /* Create an SDL Surface */
-        SDL_Surface *surface;
-        uint8_t *dst_byte;
-        surface = SDL_CreateRGBSurface(0, tile_width, tile_height, 32, 0, 0, 0, 0);
-        if (!surface) {
-            printf("Error: Failed to create SDL surface. SDL_Error: %s\n", SDL_GetError());
-            return -1;
-        }
-        dst_byte = (uint8_t*)surface->pixels;
-
-        /* Go through the data, matching to palette and write to surface */
-        uint8_t src_byte;
-        uint8_t red_p, green_p, blue_p;
-        for (; current_byte < tile_index[current_tile + 1]; current_byte++) {
-            src_byte = out_data[current_byte];
-            red_p = palette[src_byte * 3];
-            green_p = palette[src_byte * 3 + 1];
-            blue_p = palette[src_byte * 3 + 2];
-
-            dst_byte[current_tile_byte * 4] = blue_p;
-            dst_byte[current_tile_byte * 4 + 1] = green_p;
-            dst_byte[current_tile_byte * 4 + 2] = red_p;
-            dst_byte[current_tile_byte * 4 + 3] = 0xff;
-
-            current_tile_byte++;
-        }
-
-        /* Create output file name */
-        char file_num[4];
-        char fout[20];
-        fout[0] = '\0';
-        strcat(fout, "bitmaps/tile");
-        sprintf(file_num, "%u", current_tile);
-        strcat(fout, file_num);
-        strcat(fout, ".bmp");
-
-        printf("Saving %s as a bitmap (%d x %d)\n", fout, tile_width, tile_height);
-
-        /* Save and free */
-        SDL_SaveBMP(surface, fout);
-        SDL_FreeSurface(surface);
     }
 
     printf("Extraction complete.\n");

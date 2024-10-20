@@ -1,6 +1,9 @@
 TILES.EXE
 LEVEL.EXE
+IMDAVE.EXE
 /bitmaps
+/vscode
 
+*.o
 *.dat
 *.bmp

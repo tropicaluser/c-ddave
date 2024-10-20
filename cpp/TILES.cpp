@@ -1,155 +1,141 @@
-#include <iostream>   // For input/output
-#include <fstream>    // For file input/output
-#include <string>     // For string manipulation
-#include <cstdint>    // For fixed-width data types (C++11)
+#include <iostream> // For input/output
+#include <fstream>  // For file input/output
+#include <string>   // For string manipulation
+#include <cstdint>  // For fixed-width data types (C++11)
 #include <cstdlib>
 #include <SDL.h>      // Using SDL data structure
 #include <sys/stat.h> // For creating directories
 #include "../common/common.h"
 
-int main(int argc, char* argv[])
+/**
+ * @brief Reads and decodes VGA pixel data from a file using RLE (Run-Length Encoding).
+ *
+ * This function moves to the specified VGA data address within a file, reads the RLE-compressed data,
+ * decodes it, and stores the decompressed pixel data in the provided output buffer. The compression
+ * follows the Keen 1-3 RLE format, as described in the links below:
+ *
+ * - Compression Overview: https://moddingwiki.shikadi.net/wiki/Dangerous_Dave_Tileset_Format
+ * - Keen 1-3 RLE Compression Details: https://moddingwiki.shikadi.net/wiki/Keen_1-3_RLE_compression
+ *
+ * @param fin Pointer to the file from which the VGA data is to be read.
+ * @param vga_data_addr The address where the VGA data begins within the file.
+ * @param out_data A buffer to store the decoded pixel data.
+ * @return The size (in bytes) of the decoded pixel data.
+ */
+uint32_t decode_vga_data(std::ifstream *fin, uint32_t vga_data_addr, unsigned char *out_data)
 {
-    hello_world();
+    fin->seekg(vga_data_addr, std::ios::beg); /* Move the file pointer to the specified VGA data address. */
+    uint32_t final_length = 0;                /* Variable to track the length of the currently decoded data.*/
 
-    std::cout << "Starting the extraction process..." << std::endl;
+    fin->read(reinterpret_cast<char *>(&final_length), sizeof(final_length));
 
-    const uint32_t vga_data_addr = 0x120f0;
-    const uint32_t vga_pal_addr = 0x26b0a;
-
-    // Open EXE File and go to VGA pixel data
-    std::ifstream fin("DAVE.EXE", std::ios::binary);
-    if (!fin) {
-        std::cerr << "Failed to open DAVE.EXE. Please ensure the file is in the same directory." << std::endl;
-        return -1;
-    }
-    fin.seekg(vga_data_addr, std::ios::beg);
-
-    // Undo RLE and read all pixel data
-    // Read file length - first 4 bytes LE
-    uint32_t final_length = 0;
-    fin.read(reinterpret_cast<char*>(&final_length), sizeof(final_length));
-
-    // Read each byte and un-encode
+    // Variable to track the length of the currently decoded data.
     uint32_t current_length = 0;
-    unsigned char out_data[150000] = {0};
     uint8_t byte_buffer;
 
-    while (current_length < final_length) {
-        fin.read(reinterpret_cast<char*>(&byte_buffer), 1);
-        if (byte_buffer & 0x80) {
+    // Continue decoding until the entire uncompressed length is reached.
+    while (current_length < final_length)
+    {
+        // Read the next byte from the file.
+        fin->read(reinterpret_cast<char *>(&byte_buffer), 1);
+
+        // If the high bit (0x80) is set, this indicates a run of unique bytes.
+        if (byte_buffer & 0x80)
+        {
+            // Clear the high bit and increment the value by 1 to get the count of bytes.
             byte_buffer &= 0x7F;
             byte_buffer++;
-            while (byte_buffer--) {
-                fin.read(reinterpret_cast<char*>(&out_data[current_length++]), 1);
+
+            // Read and store the specified number of unique bytes directly into out_data.
+            while (byte_buffer--)
+            {
+                if (!fin->read(reinterpret_cast<char *>(&out_data[current_length++]), 1))
+                {
+                    std::cerr << "Error reading byte data." << std::endl;
+                    return current_length;
+                }
             }
-        } else {
-            byte_buffer += 3;
-            char next;
-            fin.read(&next, 1);
-            while (byte_buffer--) {
+        }
+
+        else /* Otherwise, it's a run-length encoded sequence */
+        {
+            byte_buffer += 3; /* Add 3 to the value, which gives the count of repeated bytes. */
+            char next;        /* Read the next byte, which will be repeated for the specified count. */
+            if (!fin->read(&next, 1))
+            {
+                std::cerr << "Error reading repeated byte." << std::endl;
+                return current_length;
+            }
+
+            while (byte_buffer--) /* Store the repeated byte in out_data for the specified count.*/
+            {
                 out_data[current_length++] = next;
             }
         }
     }
 
-    // Read in VGA Palette. 256-color of 3 bytes (RGB)
-    fin.seekg(vga_pal_addr, std::ios::beg);
+    // Return the total length of the decoded data.
+    return final_length;
+}
+
+int main(int argc, char *argv[])
+{
+    /* https://moddingwiki.shikadi.net/wiki/Dangerous_Dave - File formats */
+    printf("Starting the extraction process...\n");
+
+    // variables
+    const uint32_t vga_data_addr = 0x120f0; /* 0x120f0 - Dangerous Dave Tileset Format - VGA tiles */
+    const uint32_t vga_pal_addr = 0x26b0a;  /* 0x26b0a - VGA Palette	6-bit RGB */
+    unsigned char out_data[150000] = {0};   /* Buffer to hold all pixel data */
     uint8_t palette[768];
-    fin.read(reinterpret_cast<char*>(palette), 768);
-    for (uint32_t i = 0; i < 768; i++) {
-        palette[i] <<= 2;
-    }
+    std::ifstream *fin;      /* File pointer for the EXE file */
+    uint32_t final_length;   /* final length of decoded data */
+    uint32_t tile_count = 0; /* number of tiles */
 
-    fin.close();
+    // Assign values to constants
+    fin = open_exe_file("DAVE.EXE");                              /* File pointer for the EXE file */
+    final_length = decode_vga_data(fin, vga_data_addr, out_data); /* Undo RLE and read all pixel data */
+    read_vga_palette(fin, vga_pal_addr, palette);                 /* Read in VGA Palette. 256-color of 3 bytes (RGB) */
 
-    // Create the bitmaps directory if it doesn't exist
-    struct stat st = {0};
-    if (stat("bitmaps", &st) == -1) {
-        #ifdef _WIN32
-            mkdir("bitmaps");
-        #else 
-            mkdir("bitmaps", 0700);
-        #endif
-    }
+    fin->close(); /* Close the file */
+    delete fin;   /* Clean up dynamically allocated memory */
 
-    // Get total tile count from first byte
-    uint32_t tile_count = 0;
-    tile_count |= out_data[3] << 24;
-    tile_count |= out_data[2] << 16;
-    tile_count |= out_data[1] << 8;
-    tile_count |= out_data[0];
+    printf("Decoded %d bytes of data.\n", final_length);
+    printf("palette[0] = %d\n", palette[6]);
 
-    // Each in offset index for each tile
+    create_directory(FOLDER_TILESET); /* Create the tileset directory if it doesn't exist */
+
+    tile_count = get_tile_count(out_data); /* Get number of tiles */
+
+    /* offset index for each tile */
     uint32_t tile_index[500] = {0};
-    for (uint32_t i = 0; i < tile_count; i++) {
-        tile_index[i] |= out_data[i * 4 + 4];
-        tile_index[i] |= out_data[i * 4 + 5] << 8;
-        tile_index[i] |= out_data[i * 4 + 6] << 16;
-        tile_index[i] |= out_data[i * 4 + 7] << 24;
-        //std::cout << tile_index[i] << std::endl;
-    }
+    get_tile_indices(out_data, tile_index, tile_count); /* Get tile indices */
 
-    // The last tile ends at EOF
+    /* To determine when the current tile ends, we use the address of the next tile.
+    Therefore, an extra index is needed to mark the end of the file (EOF). */
+
+    /* The last tile ends at EOF */
     tile_index[tile_count] = final_length;
 
-    // Go through each tile and create separate file
-    uint16_t tile_width;
-    uint16_t tile_height;
-    uint32_t current_byte;
-    uint32_t current_tile_byte;
-    uint8_t current_tile;
+    /* Save each tile as it own file. Instead of sprite sheet.
+        Easier to get started without managing sprite sheets.
+    Go through each tile and create separate file */
+    // Process each tile
+    for (uint32_t current_tile = 0; current_tile < tile_count; current_tile++)
+    {
+        uint32_t current_byte = tile_index[current_tile];
+        uint16_t tile_width, tile_height;
 
-    for (current_tile = 0; current_tile < tile_count; current_tile++) {
-        current_tile_byte = 0;
-        current_byte = tile_index[current_tile];
+        // Get the dimensions for the current tile
+        get_tile_dimensions(out_data, &current_byte, &tile_width, &tile_height);
 
-        // Assume 16x16
-        tile_width = 16;
-        tile_height = 16;
-
-        // Skip unusual byte
-        if (current_byte > 65280)
-            current_byte++;
-
-        // Read first 4 bytes for possible custom dimensions
-        if (out_data[current_byte + 1] == 0 && out_data[current_byte + 3] == 0) {
-            if (out_data[current_byte] > 0 && out_data[current_byte] < 0xBf &&
-                out_data[current_byte + 2] > 0 && out_data[current_byte + 2] < 0x64) {
-                tile_width = out_data[current_byte];
-                tile_height = out_data[current_byte + 2];
-                current_byte += 4;
-            }
+        // Create and fill the surface
+        SDL_Surface *surface = create_and_fill_surface(out_data, &current_byte, tile_width, tile_height, palette);
+        if (surface)
+        {
+            // Save the tile to file
+            save_tile_to_file(surface, current_tile);
         }
-
-        // Create an SDL Surface
-        SDL_Surface* surface;
-        uint8_t* dst_byte;
-        surface = SDL_CreateRGBSurface(0, tile_width, tile_height, 32, 0, 0, 0, 0);
-        if (!surface) {
-            std::cerr << "Error: Failed to create SDL surface. SDL_Error: " << SDL_GetError() << std::endl;
-            return -1;
-        }
-        dst_byte = (uint8_t*)surface->pixels;
-
-        // Go through the data, matching to palette and write to surface
-        uint8_t src_byte;
-        for (; current_byte < tile_index[current_tile + 1]; current_byte++) {
-            src_byte = out_data[current_byte];
-            dst_byte[current_tile_byte * 4] = palette[src_byte * 3 + 2];     // Blue
-            dst_byte[current_tile_byte * 4 + 1] = palette[src_byte * 3 + 1]; // Green
-            dst_byte[current_tile_byte * 4 + 2] = palette[src_byte * 3];     // Red
-            dst_byte[current_tile_byte * 4 + 3] = 0xff;                      // Alpha
-
-            current_tile_byte++;
-        }
-
-        // Create output file name
-        std::string fout = "bitmaps/tile" + std::to_string(current_tile) + ".bmp";
-        std::cout << "Saving " << fout << " as a bitmap (" << tile_width << " x " << tile_height << ")" << std::endl;
-
-        // Save and free
-        SDL_SaveBMP(surface, fout.c_str());
-        SDL_FreeSurface(surface);
     }
 
     std::cout << "Extraction complete." << std::endl;
