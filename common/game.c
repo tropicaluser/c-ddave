@@ -1051,6 +1051,16 @@ void draw_ui(struct game_state *game, struct game_assets *assets, SDL_Renderer *
   /* Score LSD is always zero */
 	dest.x = 96;
 	SDL_RenderCopy(renderer, assets->graphics_tiles[148], NULL, &dest);
+
+  /* Current level start at zero-index */
+  /* Level 10s digit */
+	dest.x = 170;
+	SDL_RenderCopy(renderer, assets->graphics_tiles[148 + (game->current_level + 1)/10], NULL, &dest);
+
+  /* Modulus prevent accessing beyond end of tile array, 9 is last tile */
+	/* Level unit digit */
+	dest.x = 178;
+	SDL_RenderCopy(renderer, assets->graphics_tiles[148 + (game->current_level + 1) % 10], NULL, &dest);
 }
 
 /* Checks if designated grid has an obstruction or pickup
