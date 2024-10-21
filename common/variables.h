@@ -30,6 +30,8 @@ struct game_state
 {
   u8 quit;
   u8 current_level;
+  u8 score;
+	u8 lives;
   u8 view_x;
   u8 view_y;
   i8 scroll_x;
@@ -42,12 +44,24 @@ struct game_state
   u8 try_right;
   u8 try_left;
   u8 try_jump;
+  u8 try_fire;
+	u8 try_jetpack;
+	u8 try_down;
+	u8 try_up;
   u8 dave_right;
   u8 dave_left;
   u8 dave_jump;
+  u8 dave_fire;
+	u8 dave_jetpack;
+	u8 dave_down;
+	u8 dave_up;
   u8 jump_timer;
   u8 check_pickup_x;
 	u8 check_pickup_y;
+  u8 check_door;
+	u8 trophy;
+	u8 gun;
+	u8 jetpack;
 
   u8 collision_point[9];
 

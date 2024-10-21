@@ -143,7 +143,7 @@ void init_assets(struct game_assets *assets, SDL_Renderer *renderer)
         mask_offset = 3;
       if (i >= 77 && i <= 82)
         mask_offset = 6;
-        
+
       mname[0] = '\0';
       strcat(mname, "tile");
       sprintf(&mask_num[0], "%u", i + mask_offset);
@@ -206,6 +206,7 @@ void update_game(struct game_state *game)
   move_dave(game);
   scroll_screen(game);
   apply_gravity(game);
+  update_level(game);
   clear_input(game);
 }
 
@@ -307,6 +308,10 @@ void clear_input(struct game_state *game)
   game->try_jump = 0;
   game->try_right = 0;
   game->try_left = 0;
+  game->try_fire = 0;
+  game->try_jetpack = 0;
+  game->try_down = 0;
+  game->try_up = 0;
 }
 
 void pickup_item(struct game_state *game, u8 grid_x, u8 grid_y)
@@ -323,9 +328,17 @@ void pickup_item(struct game_state *game, u8 grid_x, u8 grid_y)
 	/* Handle the type */
 	switch (type)
 	{
-	/* Add score and special item cases here later */
-	default:
-		break;
+	  /* Jetpack pickup */
+		case 4: game->jetpack = 0xFF; break;
+		/* Trophy pickup */
+		case 10:
+		{
+      game->score += 1000;
+			game->trophy = 1;
+		} break;
+		/* Gun pickup */
+		case 20: game->gun = 1; break;
+		default: break;
 	}
 
 	/* Clear the pickup tile */
@@ -334,6 +347,31 @@ void pickup_item(struct game_state *game, u8 grid_x, u8 grid_y)
 	/* Clear the pickup handler */
 	game->check_pickup_x = 0;
 	game->check_pickup_y = 0;
+}
+
+/* Start a new level */
+void start_level(struct game_state *game)
+{
+  switch (game->current_level)
+	{
+		case 0: game->dave_x = 2; game->dave_y = 8; break;
+		case 1: game->dave_x = 1; game->dave_y = 8; break;
+		case 2: game->dave_x = 2; game->dave_y = 5; break;
+		case 3: game->dave_x = 1; game->dave_y = 5; break;
+	}
+
+  /* Sets Dave start position in a level */
+  game->dave_px = game->dave_x * TILE_SIZE;
+  game->dave_py = game->dave_y * TILE_SIZE;
+
+  /* Reset various state variables at the start of each level */
+  game->trophy = 0;
+  game->gun = 0;
+  game->jetpack = 0;
+  game->check_door = 0;
+  game->view_x = 0;
+  game->view_y = 0;
+  game->jump_timer = 0;
 }
 
 /* Scroll the screen when Dave is near the edge
@@ -385,6 +423,30 @@ void apply_gravity(struct game_state *game)
         game->dave_py = not_align < 8 ? game->dave_py - not_align : game->dave_py + TILE_SIZE - not_align;
       }
     }
+  }
+}
+
+/* Handle level-wide events */
+void update_level(struct game_state *game)
+{
+  /* Check if Dave completes level */
+  if (game->check_door)
+  {
+    if (game->trophy)
+    {
+      if (game->current_level < 9)
+      {
+        game->current_level++;
+        start_level(game);
+      }
+      else
+      {
+        printf("You won with %u points!\n", game->score);
+        game->quit = 1;
+      }
+    }
+    else
+      game->check_door = 0;
   }
 }
 
@@ -459,7 +521,10 @@ u8 is_clear(struct game_state *game, u16 px, u16 py)
   /* Dave-only collision checks (pickups) */
 	switch (type)
 	{
-	case 10:
+  case 2: game->check_door = 1; break;
+  case 4:  /* jetpack */
+  case 10: /* trophy */
+  case 20: /* gun */
 	case 47:
 	case 48:
 	case 49:

@@ -16,6 +16,7 @@ int main(int argc, char *argv[])
 	init_game(game);
 	init_sdl(&window, &renderer);					 /* Initialize SDL */
 	init_assets(assets, renderer);				 /* Initialize assets */
+	start_level(game);
 	run_game_loop(game, renderer, assets); /* Game loop with fixed time step at 30 FPS*/
 
 	/* Clean up and quit */
