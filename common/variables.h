@@ -57,6 +57,7 @@ struct game_state
 	u8 dave_down;
 	u8 dave_up;
   u8 jump_timer;
+  u8 jetpack_delay;
   u8 check_pickup_x;
 	u8 check_pickup_y;
   u8 check_door;

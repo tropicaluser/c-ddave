@@ -338,6 +338,7 @@ void start_level(struct game_state *game)
   game->dave_py = game->dave_y * TILE_SIZE;
 
   /* Reset various state variables at the start of each level */
+  game->dave_jetpack = 0;
   game->dave_fire = 0;
   game->trophy = 0;
   game->gun = 0;
@@ -365,7 +366,7 @@ void verify_input(struct game_state *game)
     game->dave_left = 1;
 
   /* Dave can jump if he's on the ground */
-  if (game->try_jump && game->on_ground && game->collision_point[0] && game->collision_point[1])
+  if (game->try_jump && game->on_ground && !game->dave_jump && !game->dave_jetpack && game->collision_point[0] && game->collision_point[1])
     game->dave_jump = 1;
 
     /* Dave and fire if he has the gun and isn't already firing */
@@ -373,8 +374,11 @@ void verify_input(struct game_state *game)
     game->dave_fire = 1;
 
   /* Dave can toggle the jetpack if he has one and he didn't recently toggle it */
-  if (game->try_jetpack && game->jetpack)
+  if (game->try_jetpack && game->jetpack && !game->jetpack_delay)
+  {
     game->dave_jetpack = !game->dave_jetpack;
+    game->jetpack_delay = 10;
+  }
 
   /* Dave can move downward if he is climbing or has a jetpack */
   if (game->try_down && game->dave_jetpack && game->collision_point[4] && game->collision_point[5])
@@ -511,7 +515,7 @@ void scroll_screen(struct game_state *game)
 void apply_gravity(struct game_state *game)
 {
   /* If he's not jumping or on the ground, apply gravity */
-  if (!game->dave_jump && !game->on_ground)
+  if (!game->dave_jump && !game->on_ground && !game->dave_jetpack)
   {
     /* If above is clear, move dave up*/
     if (is_clear(game, game->dave_px + 4, game->dave_py + 17, 1))
@@ -533,6 +537,10 @@ void apply_gravity(struct game_state *game)
 /* Handle level-wide events */
 void update_level(struct game_state *game)
 {
+  /* Decrement jetpack delay */
+  if (game->jetpack_delay)
+    game->jetpack_delay--;
+  
   /* Check if Dave completes level */
   if (game->check_door)
   {
@@ -590,6 +598,14 @@ void draw_dave(struct game_state *game, struct game_assets *assets, SDL_Renderer
   dest.h = 16;
 
   tile_index = 56;
+
+  if (game->dave_jetpack)
+    tile_index = game->last_dir >= 0 ? 77 : 80;
+  else
+  {
+    if (game->dave_jump || !game->on_ground)
+      tile_index = game->last_dir >= 0 ? 67 : 68;
+  }
 
   SDL_RenderCopy(renderer, assets->graphics_tiles[tile_index], NULL, &dest);
 }
