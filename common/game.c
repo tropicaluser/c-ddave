@@ -243,6 +243,7 @@ void render(struct game_state *game, SDL_Renderer *renderer, struct game_assets 
   draw_monsters(game, assets, renderer);
   draw_dave_bullet(game, assets, renderer);
   draw_monster_bullet(game, assets, renderer);
+  draw_ui(game, assets, renderer);
 
   /* Swaps display buffers (puts above drawing on the screen)*/
   SDL_RenderPresent(renderer);
@@ -998,6 +999,50 @@ void draw_monsters(struct game_state *game, struct game_assets *assets, SDL_Rend
       SDL_RenderCopy(renderer, assets->graphics_tiles[tile_index], NULL, &dest);
     }
   }
+}
+
+/* Render all UI elements */
+void draw_ui(struct game_state *game, struct game_assets *assets, SDL_Renderer *renderer)
+{
+  SDL_Rect dest;
+	u8 i;
+
+  /* Score banner */
+	dest.x = 1;
+	dest.y = 2;
+	dest.w = 62;
+	dest.h = 11;
+	SDL_RenderCopy(renderer, assets->graphics_tiles[137], NULL, &dest);
+
+  /* Level banner */
+	dest.x = 120;
+	SDL_RenderCopy(renderer, assets->graphics_tiles[136], NULL, &dest);
+
+	/* Lives banner */
+	dest.x = 200;
+	SDL_RenderCopy(renderer, assets->graphics_tiles[135], NULL, &dest);
+
+  /* Score 10000s digit */
+	dest.x = 64;
+	dest.w = 8;
+	dest.h = 11;
+	SDL_RenderCopy(renderer, assets->graphics_tiles[148 + (game->score / 10000) % 10], NULL, &dest);
+
+  /* Score 1000s digit */
+	dest.x = 72;
+	SDL_RenderCopy(renderer, assets->graphics_tiles[148 + (game->score / 1000) % 10], NULL, &dest);
+
+	/* Score 100s digit */
+	dest.x = 80;
+	SDL_RenderCopy(renderer, assets->graphics_tiles[148 + (game->score / 100) % 10], NULL, &dest);
+
+  /* Score 10s digit */
+	dest.x = 88;
+	SDL_RenderCopy(renderer, assets->graphics_tiles[148 + (game->score / 10) % 10], NULL, &dest);
+
+  /* Score LSD is always zero */
+	dest.x = 96;
+	SDL_RenderCopy(renderer, assets->graphics_tiles[148], NULL, &dest);
 }
 
 /* Checks if designated grid has an obstruction or pickup
