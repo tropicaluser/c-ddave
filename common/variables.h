@@ -40,6 +40,7 @@ struct game_state
 	u16 dave_px;
 	u16 dave_py;
   u8 on_ground;
+  i8 last_dir;
 
   u8 try_right;
   u8 try_left;
@@ -62,6 +63,13 @@ struct game_state
 	u8 trophy;
 	u8 gun;
 	u8 jetpack;
+
+  u16 dbullet_px;
+	u16 dbullet_py;
+	i8 dbullet_dir;
+	u16 ebullet_px;
+	u16 ebullet_py;
+	i8 ebullet_dir;
 
   u8 collision_point[9];
 

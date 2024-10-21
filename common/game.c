@@ -71,6 +71,9 @@ void init_game(struct game_state *game)
   game->dave_right = 0;
   game->dave_left = 0;
   game->dave_jump = 0;
+  game->dave_up = 0;
+  game->dave_down = 0;
+  game->dave_jetpack = 0;
   
   /* Load each level from level<xxx>.dat. (see LEVEL.c utility) */
   for (int j = 0; j < 10; j++)
@@ -191,6 +194,12 @@ void check_input(struct game_state *game)
     game->try_left = 1;
   if (keystate[SDL_SCANCODE_UP])
     game->try_jump = 1;
+  if (keystate[SDL_SCANCODE_DOWN])
+    game->try_down = 1;
+  if (keystate[SDL_SCANCODE_LCTRL])
+    game->try_fire = 1;
+  if (keystate[SDL_SCANCODE_LALT])
+    game->try_jetpack = 1;
 
   if (event.type == SDL_QUIT)
     game->quit = 1;
@@ -202,6 +211,7 @@ void update_game(struct game_state *game)
 {
   check_collision(game);
   pickup_item(game, game->check_pickup_x, game->check_pickup_y);
+  update_dbullet(game);
   verify_input(game);
   move_dave(game);
   scroll_screen(game);
@@ -220,6 +230,7 @@ void render(struct game_state *game, SDL_Renderer *renderer, struct game_assets 
   /* Draw world elements */
   draw_world(game, assets, renderer);
   draw_dave(game, assets, renderer);
+  draw_dave_bullet(game, assets, renderer);
 
   /* Swaps display buffers (puts above drawing on the screen)*/
   SDL_RenderPresent(renderer);
@@ -289,6 +300,28 @@ void pickup_item(struct game_state *game, u8 grid_x, u8 grid_y)
 	game->check_pickup_y = 0;
 }
 
+/* Move Dave's bullets */
+void update_dbullet(struct game_state *game)
+{
+  u8 grid_x;
+
+  /* No bullet in world - Not active */
+  if (!game->dbullet_px || !game->dbullet_py)
+    return;
+
+  game->dbullet_px += game->dbullet_dir * 4;
+
+  /* Bullet hit something - deactivate */
+  if (!is_clear(game, game->dbullet_px, game->dbullet_py))
+    game->dbullet_px = game->dbullet_py = 0;
+
+  grid_x = game->dbullet_px / TILE_SIZE;
+
+  /* Bullet left room - deactivate */
+  if (grid_x - game->view_x < 1 || grid_x - game->view_x > 20)
+    game->dbullet_px = game->dbullet_py = 0;
+}
+
 /* Start a new level */
 void start_level(struct game_state *game)
 {
@@ -305,6 +338,7 @@ void start_level(struct game_state *game)
   game->dave_py = game->dave_y * TILE_SIZE;
 
   /* Reset various state variables at the start of each level */
+  game->dave_fire = 0;
   game->trophy = 0;
   game->gun = 0;
   game->jetpack = 0;
@@ -312,6 +346,11 @@ void start_level(struct game_state *game)
   game->view_x = 0;
   game->view_y = 0;
   game->jump_timer = 0;
+  game->last_dir = 0;
+  game->dbullet_px = 0;
+  game->dbullet_py = 0;
+  game->ebullet_px = 0;
+  game->ebullet_py = 0;
 }
 
 /* Check if keyboard input is valid. If so, set action variable */
@@ -328,6 +367,22 @@ void verify_input(struct game_state *game)
   /* Dave can jump if he's on the ground */
   if (game->try_jump && game->on_ground && game->collision_point[0] && game->collision_point[1])
     game->dave_jump = 1;
+
+    /* Dave and fire if he has the gun and isn't already firing */
+  if (game->try_fire && game->gun && !game->dbullet_py && !game->dbullet_px)
+    game->dave_fire = 1;
+
+  /* Dave can toggle the jetpack if he has one and he didn't recently toggle it */
+  if (game->try_jetpack && game->jetpack)
+    game->dave_jetpack = !game->dave_jetpack;
+
+  /* Dave can move downward if he is climbing or has a jetpack */
+  if (game->try_down && game->dave_jetpack && game->collision_point[4] && game->collision_point[5])
+    game->dave_down = 1;
+
+  /* Dave can move up if he has jetpack */
+  if (game->try_jump && game->dave_jetpack && game->collision_point[0] && game->collision_point[1])
+    game->dave_up = 1;
 }
 
 /* Move dave around the world */
@@ -340,6 +395,7 @@ void move_dave(struct game_state *game)
   if (game->dave_right)
   {
     game->dave_px += 2;
+    game->last_dir = 1;
     game->dave_right = 0;
   }
 
@@ -347,7 +403,22 @@ void move_dave(struct game_state *game)
   if (game->dave_left)
   {
     game->dave_px -= 2;
+    game->last_dir = -1;
     game->dave_left = 0;
+  }
+
+  /* Move Dave down */
+  if (game->dave_down)
+  {
+    game->dave_py += 2;
+    game->dave_down = 0;
+  }
+
+  /* Move Dave up */
+  if (game->dave_up)
+  {
+    game->dave_py -= 2;
+    game->dave_up = 0;
   }
 
   /* Make Dave jump */
@@ -374,6 +445,28 @@ void move_dave(struct game_state *game)
     /* Stop jump if timer is zero */
     if (!game->jump_timer)
       game->dave_jump = 0;
+  }
+
+  /* Fire Dave's gun */
+  if (game->dave_fire)
+  {
+    game->dbullet_dir = game->last_dir;
+
+    /* Bullet should match Dave's direction */
+    if (!game->dbullet_dir)
+      game->dbullet_dir = 1;
+
+    /* Bullet should start in front of Dave */
+    if (game->dbullet_dir == 1)
+      game->dbullet_px = game->dave_px + 18;
+
+    if (game->dbullet_dir == -1)
+      game->dbullet_px = game->dave_px - 8;
+
+    game->dbullet_py = game->dave_py + 8;
+
+    /* Reset fire flag */
+    game->dave_fire = 0;
   }
 }
 
@@ -497,6 +590,25 @@ void draw_dave(struct game_state *game, struct game_assets *assets, SDL_Renderer
   dest.h = 16;
 
   tile_index = 56;
+
+  SDL_RenderCopy(renderer, assets->graphics_tiles[tile_index], NULL, &dest);
+}
+
+/* Render Dave's bullets */
+void draw_dave_bullet(struct game_state *game, struct game_assets *assets, SDL_Renderer *renderer)
+{
+  SDL_Rect dest;
+  u8 tile_index;
+
+  /* If no bullet, exit */
+  if (!game->dbullet_px || !game->dbullet_py)
+    return;
+
+  dest.x = game->dbullet_px - game->view_x * TILE_SIZE;
+  dest.y = game->dbullet_py;
+  dest.w = 12;
+  dest.h = 3;
+  tile_index = game->dbullet_dir > 0 ? 127 : 128;
 
   SDL_RenderCopy(renderer, assets->graphics_tiles[tile_index], NULL, &dest);
 }
