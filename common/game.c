@@ -866,7 +866,7 @@ u8 update_frame(struct game_state *game, u8 tile)
 		default: mod = 1; break;
 	}
 
-  return tile + game->tick % mod;
+  return tile + (game->tick/5) % mod;
 }
 
 /* Render the world */
