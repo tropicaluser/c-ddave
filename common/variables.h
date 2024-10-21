@@ -16,6 +16,23 @@ typedef int32_t i32;
  * -tiles contain tileset indices
  * -padding unused but included for capatibility
  */
+struct monster_state
+{
+	u8 type;
+	u8 path_index;
+	u8 monster_x;
+	u8 monster_y;
+	u16 monster_px;
+	u16 monster_py;
+	i8 next_px;
+	i8 next_py;
+};
+
+/* Format of the level information
+ * -path is used for monster movement
+ * -tiles contain tileset indices
+ * -padding unused but included for capatibility
+ */
 struct dave_level
 {
   i8 path[256];
@@ -74,6 +91,7 @@ struct game_state
 
   u8 collision_point[9];
 
+  struct monster_state monster[5];
   struct dave_level level[10];
 };
 

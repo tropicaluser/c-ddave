@@ -52,6 +52,7 @@ void run_game_loop(struct game_state *game, SDL_Renderer *renderer, struct game_
 /* Set game and monster properties to default values */
 void init_game(struct game_state *game)
 {
+  int j;
   char fname[13];
 
   game->quit = 0;
@@ -74,6 +75,10 @@ void init_game(struct game_state *game)
   game->dave_up = 0;
   game->dave_down = 0;
   game->dave_jetpack = 0;
+
+  /* Deactivate all monsters */
+  for (j = 0; j < 5; j++)
+    game->monster[j].type = 0;
   
   /* Load each level from level<xxx>.dat. (see LEVEL.c utility) */
   for (int j = 0; j < 10; j++)
@@ -230,6 +235,7 @@ void render(struct game_state *game, SDL_Renderer *renderer, struct game_assets 
   /* Draw world elements */
   draw_world(game, assets, renderer);
   draw_dave(game, assets, renderer);
+  draw_monsters(game, assets, renderer);
   draw_dave_bullet(game, assets, renderer);
 
   /* Swaps display buffers (puts above drawing on the screen)*/
@@ -325,7 +331,10 @@ void update_dbullet(struct game_state *game)
 /* Start a new level */
 void start_level(struct game_state *game)
 {
-  /* based on Constants in https://moddingwiki.shikadi.net/wiki/Dangerous_Dave_Level_format */
+  u8 i;
+
+  /* start position in https://moddingwiki.shikadi.net/wiki/Dangerous_Dave_Level_format
+  Activate monsters based on level current_level counting starts at 0 (i.e Level 3 is case 2) */
   switch (game->current_level)
 	{
 		case 0: game->dave_x = 2; game->dave_y = 8; break;
@@ -339,6 +348,35 @@ void start_level(struct game_state *game)
 		case 8: game->dave_x = 6; game->dave_y = 1; break;
 		case 9: game->dave_x = 2; game->dave_y = 8; break;
 	}
+
+  /* Deactivate monsters */
+  for (i = 0; i < 5; i++)
+  {
+    game->monster[i].type = 0;
+  }
+
+  switch (game->current_level)
+  {
+  case 2:
+  {
+    game->monster[0].type = 89;
+    game->monster[0].path_index = 0;
+    game->monster[0].monster_px = 44 * TILE_SIZE;
+    game->monster[0].monster_py = 4 * TILE_SIZE;
+    game->monster[0].next_px = 0;
+    game->monster[0].next_py = 0;
+
+    game->monster[1].type = 89;
+    game->monster[1].path_index = 0;
+    game->monster[1].monster_px = 59 * TILE_SIZE;
+    game->monster[1].monster_py = 4 * TILE_SIZE;
+    game->monster[1].next_px = 0;
+    game->monster[1].next_py = 0;
+  }
+  break;
+  default:
+    break;
+  }
 
   /* Sets Dave start position in a level */
   game->dave_px = game->dave_x * TILE_SIZE;
@@ -636,6 +674,34 @@ void draw_dave_bullet(struct game_state *game, struct game_assets *assets, SDL_R
   tile_index = game->dbullet_dir > 0 ? 127 : 128;
 
   SDL_RenderCopy(renderer, assets->graphics_tiles[tile_index], NULL, &dest);
+}
+
+/* Render monster */
+void draw_monsters(struct game_state *game, struct game_assets *assets, SDL_Renderer *renderer)
+{
+  SDL_Rect dest;
+  u8 tile_index;
+  u8 i;
+
+  /* loop through all monsters */
+  for (i = 0; i < 5; i++)
+  {
+
+    struct monster_state *m;
+    m = &game->monster[i];
+
+    if (m->type)
+    {
+      dest.x = m->monster_px - game->view_x * TILE_SIZE;
+      dest.y = m->monster_py;
+      dest.w = 20;
+      dest.h = 16;
+
+      tile_index = m->type;
+
+      SDL_RenderCopy(renderer, assets->graphics_tiles[tile_index], NULL, &dest);
+    }
+  }
 }
 
 /* Checks if designated grid has an obstruction or pickup
