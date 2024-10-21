@@ -325,12 +325,19 @@ void update_dbullet(struct game_state *game)
 /* Start a new level */
 void start_level(struct game_state *game)
 {
+  /* based on Constants in https://moddingwiki.shikadi.net/wiki/Dangerous_Dave_Level_format */
   switch (game->current_level)
 	{
 		case 0: game->dave_x = 2; game->dave_y = 8; break;
 		case 1: game->dave_x = 1; game->dave_y = 8; break;
 		case 2: game->dave_x = 2; game->dave_y = 5; break;
 		case 3: game->dave_x = 1; game->dave_y = 5; break;
+		case 4: game->dave_x = 2; game->dave_y = 8; break;
+		case 5: game->dave_x = 2; game->dave_y = 8; break;
+		case 6: game->dave_x = 1; game->dave_y = 2; break;
+		case 7: game->dave_x = 2; game->dave_y = 8; break;
+		case 8: game->dave_x = 6; game->dave_y = 1; break;
+		case 9: game->dave_x = 2; game->dave_y = 8; break;
 	}
 
   /* Sets Dave start position in a level */
@@ -431,6 +438,8 @@ void move_dave(struct game_state *game)
     if (!game->jump_timer)
     {
       game->jump_timer = 30;
+      // return to neutral position after jump
+      game->last_dir = 0;
     }
 
     /* if space above dave is clear */
