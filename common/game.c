@@ -431,45 +431,121 @@ void start_level(struct game_state *game)
   restart_level(game);
 
   /* Deactivate monsters */
-  for (i = 0; i < 5; i++)
-  {
-    game->monster[i].type = 0;
-  }
+	for (i=0;i<5;i++)
+	{
+		game->monster[i].type = 0;
+		game->monster[i].path_index = 0;
+		game->monster[i].dead_timer = 0;
+		game->monster[i].next_px = 0;
+		game->monster[i].next_py = 0;
+	}
 
-  switch (game->current_level)
-  {
-  case 2:
-  {
-    game->monster[0].type = 89;
-    game->monster[0].path_index = 0;
-    game->monster[0].dead_timer = 0;
-    game->monster[0].monster_px = 44 * TILE_SIZE;
-    game->monster[0].monster_py = 4 * TILE_SIZE;
-    game->monster[0].next_px = 0;
-    game->monster[0].next_py = 0;
+  /* Activate monsters based on level
+	   current_level counting starts at 0
+	   (i.e Level 3 is case 2) */
+	switch (game->current_level)
+	{
+		case 2:
+		{
+			game->monster[0].type = 89;
+			game->monster[0].monster_px = 44 * TILE_SIZE;
+			game->monster[0].monster_py = 4 * TILE_SIZE;
 
-    game->monster[1].type = 89;
-    game->monster[1].path_index = 0;
-    game->monster[1].dead_timer = 0;
-    game->monster[1].monster_px = 59 * TILE_SIZE;
-    game->monster[1].monster_py = 4 * TILE_SIZE;
-    game->monster[1].next_px = 0;
-    game->monster[1].next_py = 0;
-  }
-  break;
-  case 3:
-  {
-    game->monster[0].type = 93;
-    game->monster[0].path_index = 0;
-    game->monster[0].dead_timer = 0;
-    game->monster[0].monster_px = 32 * TILE_SIZE;
-    game->monster[0].monster_py = 2 * TILE_SIZE;
-    game->monster[0].next_px = 0;
-    game->monster[0].next_py = 0;
-  }
-  default:
-    break;
-  }
+			game->monster[1].type = 89;
+			game->monster[1].monster_px = 59 * TILE_SIZE;
+			game->monster[1].monster_py = 4 * TILE_SIZE;
+		} break;
+		case 3:
+		{
+			game->monster[0].type = 93;
+			game->monster[0].monster_px = 32 * TILE_SIZE;
+			game->monster[0].monster_py = 2 * TILE_SIZE;
+		} break;
+		case 4:
+		{
+			game->monster[0].type = 97;
+			game->monster[0].monster_px = 15 * TILE_SIZE;
+			game->monster[0].monster_py = 3 * TILE_SIZE;
+			game->monster[1].type = 97;
+			game->monster[1].monster_px = 33 * TILE_SIZE;
+			game->monster[1].monster_py = 3 * TILE_SIZE;
+			game->monster[2].type = 97;
+			game->monster[2].monster_px = 49 * TILE_SIZE;
+			game->monster[2].monster_py = 3 * TILE_SIZE;
+		} break;
+		case 5:
+		{
+			game->monster[0].type = 101;
+			game->monster[0].monster_px = 10 * TILE_SIZE;
+			game->monster[0].monster_py = 8 * TILE_SIZE;
+			game->monster[1].type = 101;
+			game->monster[1].monster_px = 28 * TILE_SIZE;
+			game->monster[1].monster_py = 8 * TILE_SIZE;
+			game->monster[2].type = 101;
+			game->monster[2].monster_px = 45 * TILE_SIZE;
+			game->monster[2].monster_py = 2 * TILE_SIZE;
+			game->monster[3].type = 101;
+			game->monster[3].monster_px = 40 * TILE_SIZE;
+			game->monster[3].monster_py = 8 * TILE_SIZE;
+		} break;
+		case 6:
+		{
+			game->monster[0].type = 105;
+			game->monster[0].monster_px = 5 * TILE_SIZE;
+			game->monster[0].monster_py = 2 * TILE_SIZE;
+			game->monster[1].type = 105;
+			game->monster[1].monster_px = 16 * TILE_SIZE;
+			game->monster[1].monster_py = 1 * TILE_SIZE;
+			game->monster[2].type = 105;
+			game->monster[2].monster_px = 46 * TILE_SIZE;
+			game->monster[2].monster_py = 2 * TILE_SIZE;
+			game->monster[3].type = 105;
+			game->monster[3].monster_px = 56 * TILE_SIZE;
+			game->monster[3].monster_py = 3 * TILE_SIZE;
+		} break;
+		case 7:
+		{
+			game->monster[0].type = 109;
+			game->monster[0].monster_px = 53 * TILE_SIZE;
+			game->monster[0].monster_py = 5 * TILE_SIZE;
+			game->monster[1].type = 109;
+			game->monster[1].monster_px = 72 * TILE_SIZE;
+			game->monster[1].monster_py = 2 * TILE_SIZE;
+			game->monster[2].type = 109;
+			game->monster[2].monster_px = 84 * TILE_SIZE;
+			game->monster[2].monster_py = 1 * TILE_SIZE;
+		} break;
+		case 8:
+		{
+			game->monster[0].type = 113;
+			game->monster[0].monster_px = 35 * TILE_SIZE;
+			game->monster[0].monster_py = 8 * TILE_SIZE;
+			game->monster[1].type = 113;
+			game->monster[1].monster_px = 41 * TILE_SIZE;
+			game->monster[1].monster_py = 8 * TILE_SIZE;
+			game->monster[2].type = 113;
+			game->monster[2].monster_px = 49 * TILE_SIZE;
+			game->monster[2].monster_py = 8 * TILE_SIZE;
+			game->monster[3].type = 113;
+			game->monster[3].monster_px = 65 * TILE_SIZE;
+			game->monster[3].monster_py = 8 * TILE_SIZE;
+		} break;
+		case 9:
+		{
+			game->monster[0].type = 117;
+			game->monster[0].monster_px = 45 * TILE_SIZE;
+			game->monster[0].monster_py = 8 * TILE_SIZE;
+			game->monster[1].type = 117;
+			game->monster[1].monster_px = 51 * TILE_SIZE;
+			game->monster[1].monster_py = 2 * TILE_SIZE;
+			game->monster[2].type = 117;
+			game->monster[2].monster_px = 65 * TILE_SIZE;
+			game->monster[2].monster_py = 3 * TILE_SIZE;
+			game->monster[3].type = 117;
+			game->monster[3].monster_px = 82 * TILE_SIZE;
+			game->monster[3].monster_py = 5 * TILE_SIZE;
+		} break;
+	}
 
   /* Sets Dave start position in a level */
   game->dave_px = game->dave_x * TILE_SIZE;
