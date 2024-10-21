@@ -15,6 +15,7 @@ void check_input(struct game_state *);
 void update_game(struct game_state *);
 
 void check_collision(struct game_state *);
+void pickup_item(struct game_state *, u8, u8);
 void verify_input(struct game_state *);
 void move_dave(struct game_state *);
 void scroll_screen(struct game_state *);

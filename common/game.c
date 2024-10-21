@@ -154,6 +154,7 @@ void check_input(struct game_state *game)
 void update_game(struct game_state *game)
 {
   check_collision(game);
+  pickup_item(game, game->check_pickup_x, game->check_pickup_y);
   verify_input(game);
   move_dave(game);
   scroll_screen(game);
@@ -259,6 +260,33 @@ void clear_input(struct game_state *game)
   game->try_jump = 0;
   game->try_right = 0;
   game->try_left = 0;
+}
+
+void pickup_item(struct game_state *game, u8 grid_x, u8 grid_y)
+{
+	u8 type;
+
+	/* No pickups outside of the world (or you'll lbe eaten by the grue) */
+	if (!grid_x || !grid_y)
+		return;
+
+	/* Get the type */
+	type = game->level[game->current_level].tiles[grid_y * 100 + grid_x];
+
+	/* Handle the type */
+	switch (type)
+	{
+	/* Add score and special item cases here later */
+	default:
+		break;
+	}
+
+	/* Clear the pickup tile */
+	game->level[game->current_level].tiles[grid_y * 100 + grid_x] = 0;
+
+	/* Clear the pickup handler */
+	game->check_pickup_x = 0;
+	game->check_pickup_y = 0;
 }
 
 /* Scroll the screen when Dave is near the edge
@@ -380,6 +408,25 @@ u8 is_clear(struct game_state *game, u16 px, u16 py)
 	if (type == 24) { return 0; }
 	if (type == 29) { return 0; }
 	if (type == 30) { return 0; }
+
+  /* Dave-only collision checks (pickups) */
+	switch (type)
+	{
+	case 10:
+	case 47:
+	case 48:
+	case 49:
+	case 50:
+	case 51:
+	case 52:
+	{
+		game->check_pickup_x = grid_x;
+		game->check_pickup_y = grid_y;
+	}
+	break;
+	default:
+		break;
+	}
 
   return 1;
 }
