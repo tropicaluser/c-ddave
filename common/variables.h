@@ -38,6 +38,13 @@ struct game_state
 	u16 dave_px;
 	u16 dave_py;
 
+  u8 try_right;
+  u8 try_left;
+  u8 try_jump;
+  u8 dave_right;
+  u8 dave_left;
+  u8 dave_jump;
+
   struct dave_level level[10];
 };
 

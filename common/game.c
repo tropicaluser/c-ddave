@@ -128,50 +128,27 @@ void check_input(struct game_state *game)
 {
   SDL_Event event;
   SDL_PollEvent(&event);
-  {
-    if (event.key.keysym.sym == SDLK_RIGHT)
-      game->scroll_x = 15;
-    if (event.key.keysym.sym == SDLK_LEFT)
-      game->scroll_x = -15;
-    if (event.key.keysym.sym == SDLK_DOWN)
-      game->current_level++;
-    if (event.key.keysym.sym == SDLK_UP)
-      game->current_level--;
-  }
+
+  const u8 *keystate = SDL_GetKeyboardState(NULL);
+  if (keystate[SDL_SCANCODE_RIGHT])
+    game->try_right = 1;
+  if (keystate[SDL_SCANCODE_LEFT])
+    game->try_left = 1;
+  if (keystate[SDL_SCANCODE_UP])
+    game->try_jump = 1;
+
+  if (event.type == SDL_QUIT)
+    game->quit = 1;
 }
 
 /* Updates world, entities, and handles input flags .
    Second step of the game loop */
 void update_game(struct game_state *game)
 {
-  // overflow check
-  if (game->current_level == 0xFF)
-    game->current_level = 0;
-
-  if (game->current_level > 9)
-    game->current_level = 9;
-
-  if (game->scroll_x > 0)
-  {
-    if (game->view_x == 80)
-      game->view_x = 0;
-    else
-    {
-      game->view_x++;
-      game->scroll_x--;
-    }
-  }
-
-  if (game->scroll_x < 0)
-  {
-    if (game->view_x == 80)
-      game->view_x = 0;
-    else
-    {
-      game->view_x--;
-      game->scroll_x++;
-    }
-  }
+  verify_input(game);
+  move_dave(game);
+  scroll_screen(game);
+  clear_input(game);
 }
 
 /* Renders the world. First step of the game loop */
@@ -187,6 +164,82 @@ void render(struct game_state *game, SDL_Renderer *renderer, struct game_assets 
 
   /* Swaps display buffers (puts above drawing on the screen)*/
   SDL_RenderPresent(renderer);
+}
+
+/* Check if keyboard input is valid. If so, set action variable */
+void verify_input(struct game_state *game)
+{
+  /* Dave can move right if there are no obstructions */
+  if (game->try_right)
+    game->dave_right = 1;
+
+  /* Dave can move left if there are no obstructions */
+  if (game->try_left)
+    game->dave_left = 1;
+
+  /* Dave can jump */
+  if (game->try_jump)
+    game->dave_jump = 1;
+}
+
+/* Move dave around the world */
+void move_dave(struct game_state *game)
+{
+  /* Move Dave right */
+  if (game->dave_right)
+  {
+    game->dave_px += 2;
+    game->dave_right = 0;
+  }
+
+  /* Move Dave left */
+  if (game->dave_left)
+  {
+    game->dave_px -= 2;
+    game->dave_left = 0;
+  }
+
+  /* Make Dave jump */
+  if (game->dave_jump)
+  {
+  }
+}
+
+/* Clear flags set by keyboard input */
+void clear_input(struct game_state *game)
+{
+  game->try_jump = 0;
+  game->try_right = 0;
+  game->try_left = 0;
+}
+
+/* Scroll the screen when Dave is near the edge
+   Game view is 20 grid units wide */
+void scroll_screen(struct game_state *game)
+{
+  if (game->scroll_x > 0)
+  {
+    /* Cap right side at 80 (each level is 100 wide) */
+    if (game->view_x == 80)
+      game->view_x = 0;
+    else
+    {
+      game->view_x++;
+      game->scroll_x--;
+    }
+  }
+
+  /* Cap left side at 0*/
+  if (game->scroll_x < 0)
+  {
+    if (game->view_x == 0)
+      game->view_x = 0;
+    else
+    {
+      game->view_x--;
+      game->scroll_x++;
+    }
+  }
 }
 
 /* Render the world */
@@ -217,7 +270,7 @@ void draw_world(struct game_state *game, struct game_assets *assets, SDL_Rendere
 void draw_dave(struct game_state *game, struct game_assets *assets, SDL_Renderer *renderer)
 {
   SDL_Rect dest;
-  
+
   dest.x = game->dave_px;
   dest.y = game->dave_py;
   dest.w = 20;
