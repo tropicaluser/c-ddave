@@ -114,9 +114,16 @@ void init_game(struct game_state *game)
 /* Bring in tileset from tile<xxx>.bmp files from original binary (see TILES.C)*/
 void init_assets(struct game_assets *assets, SDL_Renderer *renderer)
 {
-  int i;
+  int i, j;
   char fname[13];
   char file_num[4];
+  char mname[13];
+  char mask_num[4];
+  SDL_Surface *surface;
+  SDL_Surface *mask;
+  uint8_t *surf_p;
+  uint8_t *mask_p;
+  uint8_t mask_offset;
 
   for (i = 0; i < 158; i++)
   {
@@ -126,8 +133,48 @@ void init_assets(struct game_assets *assets, SDL_Renderer *renderer)
     strcat(fname, file_num);
     strcat(fname, ".bmp");
 
-    // Check if the file exists before trying to load it
-    assets->graphics_tiles[i] = SDL_CreateTextureFromSurface(renderer, SDL_LoadBMP(fname));
+    if ((i >= 53 && i <= 59) || i == 67 || i == 68 || (i >= 71 && i <= 73) || (i >= 77 && i <= 82))
+    {
+      if (i >= 53 && i <= 59)
+        mask_offset = 7;
+      if (i >= 67 && i <= 68)
+        mask_offset = 2;
+      if (i >= 71 && i <= 73)
+        mask_offset = 3;
+      if (i >= 77 && i <= 82)
+        mask_offset = 6;
+        
+      mname[0] = '\0';
+      strcat(mname, "tile");
+      sprintf(&mask_num[0], "%u", i + mask_offset);
+      strcat(mname, mask_num);
+      strcat(mname, ".bmp");
+
+      surface = SDL_LoadBMP(fname);
+      mask = SDL_LoadBMP(mname);
+
+      surf_p = (uint8_t *)surface->pixels;
+      mask_p = (uint8_t *)mask->pixels;
+
+      /* Write mask white background to dave tile */
+      for (j = 0; j < (mask->pitch * mask->h); j++)
+        surf_p[j] = mask_p[j] ? 0xFF : surf_p[j];
+
+      /* Make white mask transparent */
+      SDL_SetColorKey(surface, 1, SDL_MapRGB(surface->format, 0xFF, 0xFF, 0xFF));
+      assets->graphics_tiles[i] = SDL_CreateTextureFromSurface(renderer, surface);
+      SDL_FreeSurface(surface);
+      SDL_FreeSurface(mask);
+    }
+    else
+    {
+      surface = SDL_LoadBMP(fname);
+
+      /* Monster tiles should use black transparency */
+      if ((i >= 89 && i <= 120) || (i >= 129 && i <= 132))
+        SDL_SetColorKey(surface, 1, SDL_MapRGB(surface->format, 0x00, 0x00, 0x00));
+      assets->graphics_tiles[i] = SDL_CreateTextureFromSurface(renderer, surface);
+    }
   };
 }
 
