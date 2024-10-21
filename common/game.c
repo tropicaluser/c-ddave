@@ -639,7 +639,7 @@ void move_dave(struct game_state *game)
   Path data - https://moddingwiki.shikadi.net/wiki/Dangerous_Dave_Level_format */
 void move_monsters(struct game_state *game)
 {
-  u8 i;
+  u8 i, j;
 
   for (i = 0; i < 5; i++)
   {
@@ -649,51 +649,55 @@ void move_monsters(struct game_state *game)
     /* Only move if monster is alive */
     if (m->type && !m->dead_timer)
     {
-      /* Check if monster is at end of path */
-      if (!m->next_px && !m->next_py)
-      {
-        /* Get the next path waypoint */
-        m->next_px = game->level[game->current_level].path[m->path_index];
-        m->next_py = game->level[game->current_level].path[m->path_index + 1];
+      /* Move monster twice each tick. Hack to match speed of original game */
+			for (j=0;j<2;j++)
+			{
+        /* Check if monster is at end of path */
+        if (!m->next_px && !m->next_py)
+        {
+          /* Get the next path waypoint */
+          m->next_px = game->level[game->current_level].path[m->path_index];
+          m->next_py = game->level[game->current_level].path[m->path_index + 1];
 
-        /* x and y is stored in pair */
-        m->path_index += 2;
-      }
+          /* x and y is stored in pair */
+          m->path_index += 2;
+        }
 
-      /* End of path = 0xEA -- reset monster to start of path */
-      if (m->next_px == (signed char)0xEA && m->next_py == (signed char)0xEA)
-      {
-        m->next_px = game->level[game->current_level].path[0];
-        m->next_py = game->level[game->current_level].path[1];
-        m->path_index = 2;
-      }
+        /* End of path = 0xEA -- reset monster to start of path */
+        if (m->next_px == (signed char)0xEA && m->next_py == (signed char)0xEA)
+        {
+          m->next_px = game->level[game->current_level].path[0];
+          m->next_py = game->level[game->current_level].path[1];
+          m->path_index = 2;
+        }
 
-      /* Move monster left */
-      if (m->next_px < 0)
-      {
-        m->monster_px -= 1;
-        m->next_px++;
-      }
+        /* Move monster left */
+        if (m->next_px < 0)
+        {
+          m->monster_px -= 1;
+          m->next_px++;
+        }
 
-      /* Move monster right */
-      if (m->next_px > 0)
-      {
-        m->monster_px += 1;
-        m->next_px--;
-      }
+        /* Move monster right */
+        if (m->next_px > 0)
+        {
+          m->monster_px += 1;
+          m->next_px--;
+        }
 
-      /* Move monster up */
-      if (m->next_py < 0)
-      {
-        m->monster_py -= 1;
-        m->next_py++;
-      }
+        /* Move monster up */
+        if (m->next_py < 0)
+        {
+          m->monster_py -= 1;
+          m->next_py++;
+        }
 
-      /* Move monster down */
-      if (m->next_py > 0)
-      {
-        m->monster_py += 1;
-        m->next_py--;
+        /* Move monster down */
+        if (m->next_py > 0)
+        {
+          m->monster_py += 1;
+          m->next_py--;
+        }
       }
 
       /* Update monster grid position */
