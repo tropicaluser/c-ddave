@@ -45,6 +45,7 @@ struct game_state
   u8 dave_right;
   u8 dave_left;
   u8 dave_jump;
+  u8 jump_timer;
 
   u8 collision_point[9];
 
