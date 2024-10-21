@@ -313,7 +313,7 @@ void pickup_item(struct game_state *game, u8 grid_x, u8 grid_y)
 /* Move Dave's bullets */
 void update_dbullet(struct game_state *game)
 {
-  u8 grid_x;
+  u8 i, grid_x, grid_y, mx, my;
 
   /* No bullet in world - Not active */
   if (!game->dbullet_px || !game->dbullet_py)
@@ -326,10 +326,34 @@ void update_dbullet(struct game_state *game)
     game->dbullet_px = game->dbullet_py = 0;
 
   grid_x = game->dbullet_px / TILE_SIZE;
+  grid_y = game->dbullet_py / TILE_SIZE;
 
   /* Bullet left room - deactivate */
   if (grid_x - game->view_x < 1 || grid_x - game->view_x > 20)
     game->dbullet_px = game->dbullet_py = 0;
+
+    /* Bullet active */
+  if (game->dbullet_px)
+  {
+    game->dbullet_px += game->dbullet_dir * 4;
+
+    /* Check all monster positions */
+    for (i = 0; i < 5; i++)
+    {
+      if (game->monster[i].type)
+      {
+        mx = game->monster[i].monster_x;
+        my = game->monster[i].monster_y;
+
+        if ((grid_y == my || grid_y == my + 1) && (grid_x == mx || grid_x == mx + 1))
+        {
+          /* Dave's bullet hits monster - destroy bullet and monster */
+          game->dbullet_px = game->dbullet_py = 0;
+          game->monster[i].type = 0;
+        }
+      }
+    }
+  }
 }
 
 /* Move Monster's bullets */
