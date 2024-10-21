@@ -455,6 +455,10 @@ void start_level(struct game_state *game)
 /* Check if keyboard input is valid. If so, set action variable */
 void verify_input(struct game_state *game)
 {
+   /* Dave is dead. No input is valid */
+  if (game->dave_dead_timer)
+    return;
+  
   /* Dave can move right if there are no obstructions */
   if (game->try_right && game->collision_point[2] && game->collision_point[3])
     game->dave_right = 1;
@@ -463,7 +467,7 @@ void verify_input(struct game_state *game)
   if (game->try_left && game->collision_point[6] && game->collision_point[7])
     game->dave_left = 1;
 
-  /* Dave can jump if he's on the ground */
+  /* Dave can jump if he's on the ground and not using the jeypack, also no double-jumping*/
   if (game->try_jump && game->on_ground && !game->dave_jump && !game->dave_jetpack && game->collision_point[0] && game->collision_point[1])
     game->dave_jump = 1;
 
@@ -994,6 +998,14 @@ u8 is_clear(struct game_state *game, u16 px, u16 py, u8 is_dave)
     {
       game->check_pickup_x = grid_x;
       game->check_pickup_y = grid_y;
+    }
+    break;
+    case 6:
+    case 25:
+    case 36:
+    {
+      if (!game->dave_dead_timer)
+        game->dave_dead_timer = 30;
     }
     break;
     default:
