@@ -1070,6 +1070,52 @@ void draw_ui(struct game_state *game, struct game_assets *assets, SDL_Renderer *
 		dest.h = 12;
 		SDL_RenderCopy(renderer, assets->graphics_tiles[143], NULL, &dest);
 	}
+
+  /* Trophy pickup banner */
+	if (game->trophy)
+	{
+		dest.x = 72;
+		dest.y = 180;
+		dest.w = 176;
+		dest.h = 14;
+		SDL_RenderCopy(renderer, assets->graphics_tiles[138], NULL, &dest);
+	}
+
+  /* Gun pickup banner */
+	if (game->gun)
+	{
+		dest.x = 255;
+		dest.y = 180;
+		dest.w = 62;
+		dest.h = 11;
+		SDL_RenderCopy(renderer, assets->graphics_tiles[134], NULL, &dest);
+	}
+
+  /* Jetpack UI elements */
+	if (game->jetpack)
+	{
+		/* Jetpack banner */
+		dest.x = 1;
+		dest.y = 177;
+		dest.w = 62;
+		dest.h = 11;
+		SDL_RenderCopy(renderer, assets->graphics_tiles[133], NULL, &dest);
+
+		/* Jetpack fuel counter */
+		dest.x = 1;
+		dest.y = 190;
+		dest.w = 62;
+		dest.h = 8;
+		SDL_RenderCopy(renderer, assets->graphics_tiles[141], NULL, &dest);
+
+		/* Jetpack fuel bar */
+		dest.x = 2;
+		dest.y = 192;
+		dest.w = game->jetpack * 0.23;
+		dest.h = 4;
+		SDL_SetRenderDrawColor(renderer, 0xEE, 0x00, 0x00, 0xFF);
+		SDL_RenderFillRect(renderer, &dest);
+	}
 }
 
 /* Checks if designated grid has an obstruction or pickup
