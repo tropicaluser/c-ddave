@@ -882,8 +882,8 @@ void draw_world(struct game_state *game, struct game_assets *assets, SDL_Rendere
   for (j = 0; j < 10; j++)
   {
 
-    dest.y = j * TILE_SIZE;
-    dest.w = TILE_SIZE;
+    dest.y = TILE_SIZE + j * TILE_SIZE;
+		dest.w = TILE_SIZE;
     dest.h = TILE_SIZE;
 
     for (i = 0; i < 20; i++)
@@ -905,7 +905,7 @@ void draw_dave(struct game_state *game, struct game_assets *assets, SDL_Renderer
   u8 tile_index;
 
   dest.x = game->dave_px - game->view_x * TILE_SIZE;
-  dest.y = game->dave_py;
+  dest.y = TILE_SIZE + game->dave_py;
   dest.w = 20;
   dest.h = 16;
 
@@ -944,7 +944,7 @@ void draw_dave_bullet(struct game_state *game, struct game_assets *assets, SDL_R
     return;
 
   dest.x = game->dbullet_px - game->view_x * TILE_SIZE;
-  dest.y = game->dbullet_py;
+  dest.y = TILE_SIZE + game->dbullet_py;
   dest.w = 12;
   dest.h = 3;
   tile_index = game->dbullet_dir > 0 ? 127 : 128;
@@ -963,7 +963,7 @@ void draw_monster_bullet(struct game_state *game, struct game_assets *assets, SD
     return;
 
   dest.x = game->ebullet_px - game->view_x * TILE_SIZE;
-  dest.y = game->ebullet_py;
+  dest.y = TILE_SIZE + game->ebullet_py;
   dest.w = 12;
   dest.h = 3;
   tile_index = game->ebullet_dir > 0 ? 121 : 124;
@@ -988,7 +988,7 @@ void draw_monsters(struct game_state *game, struct game_assets *assets, SDL_Rend
     if (m->type)
     {
       dest.x = m->monster_px - game->view_x * TILE_SIZE;
-      dest.y = m->monster_py;
+      dest.y = TILE_SIZE + m->monster_py;
       dest.w = 20;
       dest.h = 16;
 
