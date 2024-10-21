@@ -544,6 +544,13 @@ void move_dave(struct game_state *game)
   game->dave_x = game->dave_px / TILE_SIZE;
   game->dave_y = game->dave_py / TILE_SIZE;
 
+  /* Wrap Dave to the top of the level when he falls through the floor */
+	if (game->dave_y > 9)
+	{
+		game->dave_y = 0;
+		game->dave_py = -16;
+	}
+
   /* Move Dave right */
   if (game->dave_right)
   {
