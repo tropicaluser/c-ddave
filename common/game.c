@@ -217,9 +217,11 @@ void update_game(struct game_state *game)
   check_collision(game);
   pickup_item(game, game->check_pickup_x, game->check_pickup_y);
   update_dbullet(game);
+  update_ebullet(game);
   verify_input(game);
   move_dave(game);
   move_monsters(game);
+  fire_monsters(game);
   scroll_screen(game);
   apply_gravity(game);
   update_level(game);
@@ -238,6 +240,7 @@ void render(struct game_state *game, SDL_Renderer *renderer, struct game_assets 
   draw_dave(game, assets, renderer);
   draw_monsters(game, assets, renderer);
   draw_dave_bullet(game, assets, renderer);
+  draw_monster_bullet(game, assets, renderer);
 
   /* Swaps display buffers (puts above drawing on the screen)*/
   SDL_RenderPresent(renderer);
@@ -327,6 +330,25 @@ void update_dbullet(struct game_state *game)
   /* Bullet left room - deactivate */
   if (grid_x - game->view_x < 1 || grid_x - game->view_x > 20)
     game->dbullet_px = game->dbullet_py = 0;
+}
+
+/* Move Monster's bullets */
+void update_ebullet(struct game_state *game)
+{
+  /* No bullet in world - Not active */
+  if (!game->ebullet_px || !game->ebullet_py)
+    return;
+
+  /* Bullet hit something - deactivate */
+  if (!is_clear(game, game->ebullet_px, game->ebullet_py, 0))
+    game->ebullet_px = game->ebullet_py = 0;
+
+  /* Bullet left room - deactivate */
+  if (!is_visible(game, game->ebullet_px))
+    game->ebullet_px = game->ebullet_py = 0;
+
+  if (game->ebullet_px)
+    game->ebullet_px += game->ebullet_dir * 4;
 }
 
 /* Start a new level */
@@ -589,6 +611,38 @@ void move_monsters(struct game_state *game)
   }
 }
 
+/* Monster shooting */
+void fire_monsters(struct game_state *game)
+{
+  int i;
+
+  if (!game->ebullet_px && !game->ebullet_py)
+  {
+    for (i = 0; i < 5; i++)
+    {
+      /* Monster's shoot if they're active and visible */
+      if (game->monster[i].type && is_visible(game, game->monster[i].monster_px))
+      {
+        /* Shoot towards Dave */
+        game->ebullet_dir = game->dave_px < game->monster[i].monster_px ? -1 : 1;
+
+        if (!game->ebullet_dir)
+          game->ebullet_dir = 1;
+
+        /* Start bullet in front of monster */
+        if (game->ebullet_dir == 1)
+          game->ebullet_px = game->monster[i].monster_px + 18;
+
+        if (game->ebullet_dir == -1)
+          game->ebullet_px = game->monster[i].monster_px - 8;
+
+        /* vertical align it to the center of the title */
+        game->ebullet_py = game->monster[i].monster_py + 8;
+      }
+    }
+  }
+}
+
 /* Scroll the screen when Dave is near the edge
    Game view is 20 grid units wide */
 void scroll_screen(struct game_state *game)
@@ -744,6 +798,25 @@ void draw_dave_bullet(struct game_state *game, struct game_assets *assets, SDL_R
   SDL_RenderCopy(renderer, assets->graphics_tiles[tile_index], NULL, &dest);
 }
 
+/* Render Monster bullets */
+void draw_monster_bullet(struct game_state *game, struct game_assets *assets, SDL_Renderer *renderer)
+{
+  SDL_Rect dest;
+  u8 tile_index;
+
+  /* If no bullet, exit */
+  if (!game->ebullet_px || !game->ebullet_py)
+    return;
+
+  dest.x = game->ebullet_px - game->view_x * TILE_SIZE;
+  dest.y = game->ebullet_py;
+  dest.w = 12;
+  dest.h = 3;
+  tile_index = game->ebullet_dir > 0 ? 121 : 124;
+
+  SDL_RenderCopy(renderer, assets->graphics_tiles[tile_index], NULL, &dest);
+}
+
 /* Render monster */
 void draw_monsters(struct game_state *game, struct game_assets *assets, SDL_Renderer *renderer)
 {
@@ -831,4 +904,12 @@ u8 is_clear(struct game_state *game, u16 px, u16 py, u8 is_dave)
   }
 
   return 1;
+}
+
+/* Checks if an input pixel position is currently visible */
+inline u8 is_visible(struct game_state *game, u16 px)
+{
+  u8 pos_x;
+  pos_x = px / TILE_SIZE;
+  return (pos_x - game->view_x < 20 && pos_x - game->view_x >= 0);
 }
