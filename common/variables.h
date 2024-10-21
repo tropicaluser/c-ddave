@@ -47,6 +47,7 @@ struct dave_level
 struct game_state
 {
   u8 quit;
+  u8 tick;
   u8 current_level;
   u8 score;
 	u8 lives;

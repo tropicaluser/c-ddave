@@ -30,6 +30,7 @@ void update_level(struct game_state *);
 void restart_level(struct game_state *);
 
 void render(struct game_state *, SDL_Renderer *, struct game_assets *);
+u8 update_frame(struct game_state *, u8);
 
 void draw_world(struct game_state *, struct game_assets *, SDL_Renderer *);
 void draw_dave(struct game_state *, struct game_assets *, SDL_Renderer *);

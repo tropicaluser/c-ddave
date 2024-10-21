@@ -753,9 +753,19 @@ void update_level(struct game_state *game)
 {
   u8 i;
 
+  game->tick++;
+
   /* Decrement jetpack delay */
   if (game->jetpack_delay)
     game->jetpack_delay--;
+
+  /* Decrement Dave's jetpack fuel */
+  if (game->dave_jetpack)
+  {
+    game->jetpack--;
+    if (!game->jetpack)
+      game->dave_jetpack = 0;
+  }
   
   /* Check if Dave completes level */
   if (game->check_door)
@@ -839,6 +849,26 @@ void restart_level(struct game_state *game)
   game->dave_py = game->dave_y * TILE_SIZE;
 }
 
+/* Update frame animation based on tick timer and tile's type count */
+u8 update_frame(struct game_state *game, u8 tile)
+{
+  /* figure out how many frames there are. create a modular ring
+    using the initial tile as the anchor.  */
+  u8 mod;
+
+  switch (tile)
+	{
+		case 6: mod = 4; break;
+		case 10: mod = 5; break;
+		case 25: mod = 4; break;
+		case 36: mod = 5; break;
+		case 129: mod = 4; break;
+		default: mod = 1; break;
+	}
+
+  return tile + game->tick % mod;
+}
+
 /* Render the world */
 void draw_world(struct game_state *game, struct game_assets *assets, SDL_Renderer *renderer)
 {
@@ -858,6 +888,9 @@ void draw_world(struct game_state *game, struct game_assets *assets, SDL_Rendere
     {
       dest.x = i * TILE_SIZE;
       tile_index = game->level[game->current_level].tiles[j * 100 + game->view_x + i];
+
+      /* Update the frame of the tile */
+      tile_index = update_frame(game, tile_index);
       SDL_RenderCopy(renderer, assets->graphics_tiles[tile_index], NULL, &dest);
     }
   }
