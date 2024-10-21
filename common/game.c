@@ -849,8 +849,8 @@ void restart_level(struct game_state *game)
   game->dave_py = game->dave_y * TILE_SIZE;
 }
 
-/* Update frame animation based on tick timer and tile's type count */
-u8 update_frame(struct game_state *game, u8 tile)
+/* Update frame animation based on tick timer, tile's type count and tile position*/
+u8 update_frame(struct game_state *game, u8 tile, u8 salt)
 {
   /* figure out how many frames there are. create a modular ring
     using the initial tile as the anchor.  */
@@ -866,7 +866,7 @@ u8 update_frame(struct game_state *game, u8 tile)
 		default: mod = 1; break;
 	}
 
-  return tile + (game->tick/5) % mod;
+  return tile + (salt + game->tick / 5) % mod;
 }
 
 /* Render the world */
@@ -890,7 +890,7 @@ void draw_world(struct game_state *game, struct game_assets *assets, SDL_Rendere
       tile_index = game->level[game->current_level].tiles[j * 100 + game->view_x + i];
 
       /* Update the frame of the tile */
-      tile_index = update_frame(game, tile_index);
+      tile_index = update_frame(game, tile_index, i);
       SDL_RenderCopy(renderer, assets->graphics_tiles[tile_index], NULL, &dest);
     }
   }
