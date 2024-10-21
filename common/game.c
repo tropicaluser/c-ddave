@@ -57,6 +57,7 @@ void init_game(struct game_state *game)
 
   // Initialize game state variables
   game->quit = 0;
+  game->score = 0;
   game->current_level = 0;
   game->lives = 3;
   game->view_x = 0;
@@ -302,6 +303,13 @@ void pickup_item(struct game_state *game, u8 grid_x, u8 grid_y)
 		} break;
 		/* Gun pickup */
 		case 20: game->gun = 1; break;
+    /* Collectibls pickup */
+		case 47: game->score += 100; break;
+		case 48: game->score += 50; break;
+		case 49: game->score += 150; break;
+		case 50: game->score += 300; break;
+		case 51: game->score += 200; break;
+		case 52: game->score += 500; break;
 		default: break;
 	}
 
