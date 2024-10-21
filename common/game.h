@@ -20,6 +20,7 @@ void pickup_item(struct game_state *, u8, u8);
 void update_dbullet(struct game_state *);
 void verify_input(struct game_state *);
 void move_dave(struct game_state *);
+void move_monsters(struct game_state *);
 void scroll_screen(struct game_state *);
 void apply_gravity(struct game_state *);
 void update_level(struct game_state *);
