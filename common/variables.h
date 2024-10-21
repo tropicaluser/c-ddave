@@ -55,10 +55,10 @@ struct game_state
   u8 view_x;
   u8 view_y;
   i8 scroll_x;
-  u8 dave_x;
-	u8 dave_y;
-	u16 dave_px;
-	u16 dave_py;
+  i8 dave_x;
+	i8 dave_y;
+	i16 dave_px;
+	i16 dave_py;
   u8 on_ground;
   i8 last_dir;
 
