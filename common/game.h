@@ -41,5 +41,6 @@ void draw_ui(struct game_state *, struct game_assets *, SDL_Renderer *);
 
 u8 is_clear(struct game_state *, u16, u16, u8);
 u8 is_visible(struct game_state *, u16);
+void add_score(struct game_state *, u16);
 
 #endif // GAME_H

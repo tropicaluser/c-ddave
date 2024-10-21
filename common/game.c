@@ -319,18 +319,18 @@ void pickup_item(struct game_state *game, u8 grid_x, u8 grid_y)
 		/* Trophy pickup */
 		case 10:
 		{
-      game->score += 1000;
+      add_score(game,1000);
 			game->trophy = 1;
 		} break;
 		/* Gun pickup */
 		case 20: game->gun = 1; break;
     /* Collectibls pickup */
-		case 47: game->score += 100; break;
-		case 48: game->score += 50; break;
-		case 49: game->score += 150; break;
-		case 50: game->score += 300; break;
-		case 51: game->score += 200; break;
-		case 52: game->score += 500; break;
+		case 47: add_score(game,100); break;
+		case 48: add_score(game,50); break;
+		case 49: add_score(game,150); break;
+		case 50: add_score(game,300); break;
+		case 51: add_score(game,200); break;
+		case 52: add_score(game,500); break;
 		default: break;
 	}
 
@@ -382,6 +382,7 @@ void update_dbullet(struct game_state *game)
           /* Dave's bullet hits monster - destroy bullet and monster */
           game->dbullet_px = game->dbullet_py = 0;
           game->monster[i].dead_timer = 30;
+          add_score(game, 300);
         }
       }
     }
@@ -818,6 +819,7 @@ void update_level(struct game_state *game)
   {
     if (game->trophy)
     {
+      add_score(game, 2000);
       if (game->current_level < 9)
       {
         game->current_level++;
@@ -1243,3 +1245,14 @@ inline u8 is_visible(struct game_state *game, u16 px)
   pos_x = px / TILE_SIZE;
   return (pos_x - game->view_x < 20 && pos_x - game->view_x >= 0);
 }
+
+/* Adds to player score and checks for extra life every 20,000 points */
+inline void add_score(struct game_state *game, u16 new_score)
+{
+  /* Compare old score with new score. to see if extra life should be awarded */
+	if (game->score / 20000 != ((game->score+new_score) / 20000))
+		game->lives++;
+
+	game->score += new_score;
+}
+
