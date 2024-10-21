@@ -253,6 +253,9 @@ void render(struct game_state *game, SDL_Renderer *renderer, struct game_assets 
 /* Updates dave's collision point state */
 void check_collision(struct game_state *game)
 {
+  u8 grid_x, grid_y;
+	u8 type;
+
   /* Updates 8 points around Dave */
   game->collision_point[0] = is_clear(game, game->dave_px + 4, game->dave_py - 1, 1);
   game->collision_point[1] = is_clear(game, game->dave_px + 10, game->dave_py - 1, 1);
@@ -264,7 +267,25 @@ void check_collision(struct game_state *game)
   game->collision_point[7] = is_clear(game, game->dave_px + 3, game->dave_py + 4, 1);
 
   /* Is dave on the ground? */
-  game->on_ground = (!game->collision_point[4] && !game->collision_point[5]);
+  game->on_ground = ((!game->collision_point[4] && !game->collision_point[5]) || game->dave_climb);
+
+  grid_x = (game->dave_px + 6) / TILE_SIZE;
+  grid_y = (game->dave_py + 8) / TILE_SIZE;
+
+  /* Don't check outside the room */
+	if (grid_x < 100 && grid_y < 10)
+		type = game->level[game->current_level].tiles[grid_y * 100 + grid_x];
+	else
+		type = 0;
+
+  /* Can dave climb something in his current location (Trees? Stars?) */
+	if ((type >= 33 && type <= 35) || type == 41)
+		game->can_climb = 1;
+	else
+	{
+		game->can_climb = 0;
+		game->dave_climb = 0;
+	}
 }
 
 /* Clear flags set by keyboard input */
@@ -487,8 +508,15 @@ void verify_input(struct game_state *game)
     game->dave_left = 1;
 
   /* Dave can jump if he's on the ground and not using the jeypack, also no double-jumping*/
-  if (game->try_jump && game->on_ground && !game->dave_jump && !game->dave_jetpack && game->collision_point[0] && game->collision_point[1])
-    game->dave_jump = 1;
+  if (game->try_jump && game->on_ground && !game->dave_jump && !game->dave_jetpack && !game->can_climb && game->collision_point[0] && game->collision_point[1])
+		game->dave_jump = 1;
+
+  /* Dave should climb rather than jump if he's in front of a climbable tile */
+	if (game->try_jump && game->can_climb)
+	{
+		game->dave_up = 1;
+		game->dave_climb = 1;
+	}
 
     /* Dave and fire if he has the gun and isn't already firing */
   if (game->try_fire && game->gun && !game->dbullet_py && !game->dbullet_px)
@@ -502,8 +530,8 @@ void verify_input(struct game_state *game)
   }
 
   /* Dave can move downward if he is climbing or has a jetpack */
-  if (game->try_down && game->dave_jetpack && game->collision_point[4] && game->collision_point[5])
-    game->dave_down = 1;
+	if (game->try_down && (game->dave_jetpack || game->dave_climb) && game->collision_point[4] && game->collision_point[5])
+		game->dave_down = 1;
 
   /* Dave can move up if he has jetpack */
   if (game->try_jump && game->dave_jetpack && game->collision_point[0] && game->collision_point[1])
@@ -740,7 +768,7 @@ void scroll_screen(struct game_state *game)
 void apply_gravity(struct game_state *game)
 {
   /* If he's not jumping or on the ground, apply gravity */
-  if (!game->dave_jump && !game->on_ground && !game->dave_jetpack)
+  if (!game->dave_jump && !game->on_ground && !game->dave_jetpack && !game->dave_climb)
   {
     /* If above is clear, move dave up*/
     if (is_clear(game, game->dave_px + 4, game->dave_py + 17, 1))
@@ -933,6 +961,9 @@ void draw_dave(struct game_state *game, struct game_assets *assets, SDL_Renderer
   {
     if (game->dave_jump || !game->on_ground)
       tile_index = game->last_dir >= 0 ? 67 : 68;
+
+    if (game->dave_climb)
+			tile_index = 71 + (game->dave_tick/5) % 3;
   }
 
   /* dead sprite - animation */

@@ -74,6 +74,7 @@ struct game_state
   u8 dave_jump;
   u8 dave_fire;
 	u8 dave_jetpack;
+  u8 dave_climb;
 	u8 dave_down;
 	u8 dave_up;
   u8 jump_timer;
@@ -82,6 +83,7 @@ struct game_state
   u8 check_pickup_x;
 	u8 check_pickup_y;
   u8 check_door;
+  u8 can_climb;
 	u8 trophy;
 	u8 gun;
 	u8 jetpack;
