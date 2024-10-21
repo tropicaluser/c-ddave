@@ -1015,6 +1015,16 @@ void draw_ui(struct game_state *game, struct game_assets *assets, SDL_Renderer *
   SDL_Rect dest;
 	u8 i;
 
+  /* Screen border */
+	dest.x = 0;
+	dest.y = 16;
+	dest.w = 960;
+	dest.h = 1;
+	SDL_SetRenderDrawColor(renderer, 0xEE, 0xEE, 0xEE, 0xFF);
+	SDL_RenderFillRect(renderer, &dest);
+	dest.y = 176;
+	SDL_RenderFillRect(renderer, &dest);
+
   /* Score banner */
 	dest.x = 1;
 	dest.y = 2;
