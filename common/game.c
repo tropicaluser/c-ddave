@@ -1061,6 +1061,15 @@ void draw_ui(struct game_state *game, struct game_assets *assets, SDL_Renderer *
 	/* Level unit digit */
 	dest.x = 178;
 	SDL_RenderCopy(renderer, assets->graphics_tiles[148 + (game->current_level + 1) % 10], NULL, &dest);
+
+  /* Life count icon */
+	for (i=0; i<game->lives;i++)
+	{
+		dest.x = (255+16*i);
+		dest.w = 16;
+		dest.h = 12;
+		SDL_RenderCopy(renderer, assets->graphics_tiles[143], NULL, &dest);
+	}
 }
 
 /* Checks if designated grid has an obstruction or pickup
