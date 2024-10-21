@@ -240,14 +240,14 @@ void render(struct game_state *game, SDL_Renderer *renderer, struct game_assets 
 void check_collision(struct game_state *game)
 {
   /* Updates 8 points around Dave */
-  game->collision_point[0] = is_clear(game, game->dave_px + 4, game->dave_py - 1);
-  game->collision_point[1] = is_clear(game, game->dave_px + 10, game->dave_py - 1);
-  game->collision_point[2] = is_clear(game, game->dave_px + 11, game->dave_py + 4);
-  game->collision_point[3] = is_clear(game, game->dave_px + 11, game->dave_py + 12);
-  game->collision_point[4] = is_clear(game, game->dave_px + 10, game->dave_py + 16);
-  game->collision_point[5] = is_clear(game, game->dave_px + 4, game->dave_py + 16);
-  game->collision_point[6] = is_clear(game, game->dave_px + 3, game->dave_py + 12);
-  game->collision_point[7] = is_clear(game, game->dave_px + 3, game->dave_py + 4);
+  game->collision_point[0] = is_clear(game, game->dave_px + 4, game->dave_py - 1, 1);
+  game->collision_point[1] = is_clear(game, game->dave_px + 10, game->dave_py - 1, 1);
+  game->collision_point[2] = is_clear(game, game->dave_px + 11, game->dave_py + 4, 1);
+  game->collision_point[3] = is_clear(game, game->dave_px + 11, game->dave_py + 12, 1);
+  game->collision_point[4] = is_clear(game, game->dave_px + 10, game->dave_py + 16, 1);
+  game->collision_point[5] = is_clear(game, game->dave_px + 4, game->dave_py + 16, 1);
+  game->collision_point[6] = is_clear(game, game->dave_px + 3, game->dave_py + 12, 1);
+  game->collision_point[7] = is_clear(game, game->dave_px + 3, game->dave_py + 4, 1);
 
   /* Is dave on the ground? */
   game->on_ground = (!game->collision_point[4] && !game->collision_point[5]);
@@ -312,7 +312,7 @@ void update_dbullet(struct game_state *game)
   game->dbullet_px += game->dbullet_dir * 4;
 
   /* Bullet hit something - deactivate */
-  if (!is_clear(game, game->dbullet_px, game->dbullet_py))
+  if (!is_clear(game, game->dbullet_px, game->dbullet_py, 0))
     game->dbullet_px = game->dbullet_py = 0;
 
   grid_x = game->dbullet_px / TILE_SIZE;
@@ -514,7 +514,7 @@ void apply_gravity(struct game_state *game)
   if (!game->dave_jump && !game->on_ground)
   {
     /* If above is clear, move dave up*/
-    if (is_clear(game, game->dave_px + 4, game->dave_py + 17))
+    if (is_clear(game, game->dave_px + 4, game->dave_py + 17, 1))
       game->dave_py += 2;
     else
     {
@@ -615,7 +615,7 @@ void draw_dave_bullet(struct game_state *game, struct game_assets *assets, SDL_R
 
 /* Checks if designated grid has an obstruction or pickup
    1 means clear */
-u8 is_clear(struct game_state *game, u16 px, u16 py)
+u8 is_clear(struct game_state *game, u16 px, u16 py, u8 is_dave)
 {
   u8 grid_x;
   u8 grid_y;
@@ -644,27 +644,32 @@ u8 is_clear(struct game_state *game, u16 px, u16 py)
 	if (type == 29) { return 0; }
 	if (type == 30) { return 0; }
 
-  /* Dave-only collision checks (pickups) */
-	switch (type)
-	{
-  case 2: game->check_door = 1; break;
-  case 4:  /* jetpack */
-  case 10: /* trophy */
-  case 20: /* gun */
-	case 47:
-	case 48:
-	case 49:
-	case 50:
-	case 51:
-	case 52:
-	{
-		game->check_pickup_x = grid_x;
-		game->check_pickup_y = grid_y;
-	}
-	break;
-	default:
-		break;
-	}
+  if (is_dave)
+  {
+    /* Dave-only collision checks (pickups) */
+    switch (type)
+    {
+    case 2:
+      game->check_door = 1;
+      break;
+    case 4:  /* jetpack */
+    case 10: /* trophy */
+    case 20: /* gun */
+    case 47:
+    case 48:
+    case 49:
+    case 50:
+    case 51:
+    case 52:
+    {
+      game->check_pickup_x = grid_x;
+      game->check_pickup_y = grid_y;
+    }
+    break;
+    default:
+      break;
+    }
+  }
 
   return 1;
 }

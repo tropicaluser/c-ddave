@@ -31,6 +31,6 @@ void draw_world(struct game_state *, struct game_assets *, SDL_Renderer *);
 void draw_dave(struct game_state *, struct game_assets *, SDL_Renderer *);
 void draw_dave_bullet(struct game_state *, struct game_assets *, SDL_Renderer *);
 
-u8 is_clear(struct game_state *, u16, u16);
+u8 is_clear(struct game_state *, u16, u16, u8);
 
 #endif // GAME_H
