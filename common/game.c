@@ -426,6 +426,16 @@ void start_level(struct game_state *game)
     game->monster[1].next_py = 0;
   }
   break;
+  case 3:
+  {
+    game->monster[0].type = 93;
+    game->monster[0].path_index = 0;
+    game->monster[0].dead_timer = 0;
+    game->monster[0].monster_px = 32 * TILE_SIZE;
+    game->monster[0].monster_py = 2 * TILE_SIZE;
+    game->monster[0].next_px = 0;
+    game->monster[0].next_py = 0;
+  }
   default:
     break;
   }
