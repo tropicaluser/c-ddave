@@ -28,11 +28,22 @@ void init_sdl(SDL_Window **window, SDL_Renderer **renderer)
 
 void run_game_loop(struct game_state *game, SDL_Renderer *renderer, struct game_assets *assets)
 {
+  u32 timer_begin;
+  u32 timer_end;
+  u32 delay;
+
   while (!game->quit)
   {
+    timer_begin = SDL_GetTicks();
+
     check_input(game);
     update_game(game);
     render(game, renderer, assets);
+
+    timer_end = SDL_GetTicks();
+    delay = 33 - (timer_end - timer_begin);
+    delay = delay > 33 ? 0 : delay;
+    SDL_Delay(delay);
   }
 }
 
@@ -45,6 +56,7 @@ void init_game(struct game_state *game)
   game->current_level = 0;
   game->view_x = 0;
   game->view_y = 0;
+  game->scroll_x = 0;
 
   /* Load each level from level<xxx>.dat. (see LEVEL.c utility) */
   for (int j = 0; j < 10; j++)
@@ -108,15 +120,48 @@ void check_input(struct game_state *game)
 {
   SDL_Event event;
   SDL_PollEvent(&event);
-  if (event.type == SDL_QUIT)
-    game->quit = 1;
-  if (event.type == SDL_KEYDOWN)
   {
+    if (event.key.keysym.sym == SDLK_RIGHT)
+      game->scroll_x = 15;
+    if (event.key.keysym.sym == SDLK_LEFT)
+      game->scroll_x = -15;
+    if (event.key.keysym.sym == SDLK_DOWN)
+      game->current_level++;
+    if (event.key.keysym.sym == SDLK_UP)
+      game->current_level--;
   }
 }
 
-void update_game(struct game_state *)
+void update_game(struct game_state *game)
 {
+  // overflow check
+  if (game->current_level == 0xFF)
+    game->current_level = 0;
+
+  if (game->current_level > 9)
+    game->current_level = 9;
+
+  if (game->scroll_x > 0)
+  {
+    if (game->view_x == 80)
+      game->view_x = 0;
+    else
+    {
+      game->view_x++;
+      game->scroll_x--;
+    }
+  }
+
+  if (game->scroll_x < 0)
+  {
+    if (game->view_x == 80)
+      game->view_x = 0;
+    else
+    {
+      game->view_x--;
+      game->scroll_x++;
+    }
+  }
 }
 
 void render(struct game_state *game, SDL_Renderer *renderer, struct game_assets *assets)

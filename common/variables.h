@@ -32,6 +32,7 @@ struct game_state
   u8 current_level;
   u8 view_x;
   u8 view_y;
+  i8 scroll_x;
 
   struct dave_level level[10];
 };
