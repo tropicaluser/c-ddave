@@ -71,7 +71,7 @@ void init_game(struct game_state *game)
   game->dave_right = 0;
   game->dave_left = 0;
   game->dave_jump = 0;
-
+  
   /* Load each level from level<xxx>.dat. (see LEVEL.c utility) */
   for (int j = 0; j < 10; j++)
   {
@@ -242,69 +242,6 @@ void check_collision(struct game_state *game)
   game->on_ground = (!game->collision_point[4] && !game->collision_point[5]);
 }
 
-/* Check if keyboard input is valid. If so, set action variable */
-void verify_input(struct game_state *game)
-{
-  /* Dave can move right if there are no obstructions */
-  if (game->try_right && game->collision_point[2] && game->collision_point[3])
-    game->dave_right = 1;
-
-  /* Dave can move left if there are no obstructions */
-  if (game->try_left && game->collision_point[6] && game->collision_point[7])
-    game->dave_left = 1;
-
-  /* Dave can jump if he's on the ground */
-  if (game->try_jump && game->on_ground && game->collision_point[0] && game->collision_point[1])
-    game->dave_jump = 1;
-}
-
-/* Move dave around the world */
-void move_dave(struct game_state *game)
-{
-  game->dave_x = game->dave_px / TILE_SIZE;
-  game->dave_y = game->dave_py / TILE_SIZE;
-
-  /* Move Dave right */
-  if (game->dave_right)
-  {
-    game->dave_px += 2;
-    game->dave_right = 0;
-  }
-
-  /* Move Dave left */
-  if (game->dave_left)
-  {
-    game->dave_px -= 2;
-    game->dave_left = 0;
-  }
-
-  /* Make Dave jump */
-  if (game->dave_jump)
-  {
-    if (!game->jump_timer)
-    {
-      game->jump_timer = 30;
-    }
-
-    /* if space above dave is clear */
-    if (game->collision_point[0] && game->collision_point[1])
-    {
-      /* Dave should move up at a decreasing rate, then float for a moment */
-      if (game->jump_timer > 16)
-        game->dave_py -= 2;
-
-      if (game->jump_timer >= 12 && game->jump_timer <= 15)
-        game->dave_py -= 1;
-    }
-
-    game->jump_timer--;
-
-    /* Stop jump if timer is zero */
-    if (!game->jump_timer)
-      game->dave_jump = 0;
-  }
-}
-
 /* Clear flags set by keyboard input */
 void clear_input(struct game_state *game)
 {
@@ -375,6 +312,69 @@ void start_level(struct game_state *game)
   game->view_x = 0;
   game->view_y = 0;
   game->jump_timer = 0;
+}
+
+/* Check if keyboard input is valid. If so, set action variable */
+void verify_input(struct game_state *game)
+{
+  /* Dave can move right if there are no obstructions */
+  if (game->try_right && game->collision_point[2] && game->collision_point[3])
+    game->dave_right = 1;
+
+  /* Dave can move left if there are no obstructions */
+  if (game->try_left && game->collision_point[6] && game->collision_point[7])
+    game->dave_left = 1;
+
+  /* Dave can jump if he's on the ground */
+  if (game->try_jump && game->on_ground && game->collision_point[0] && game->collision_point[1])
+    game->dave_jump = 1;
+}
+
+/* Move dave around the world */
+void move_dave(struct game_state *game)
+{
+  game->dave_x = game->dave_px / TILE_SIZE;
+  game->dave_y = game->dave_py / TILE_SIZE;
+
+  /* Move Dave right */
+  if (game->dave_right)
+  {
+    game->dave_px += 2;
+    game->dave_right = 0;
+  }
+
+  /* Move Dave left */
+  if (game->dave_left)
+  {
+    game->dave_px -= 2;
+    game->dave_left = 0;
+  }
+
+  /* Make Dave jump */
+  if (game->dave_jump)
+  {
+    if (!game->jump_timer)
+    {
+      game->jump_timer = 30;
+    }
+
+    /* if space above dave is clear */
+    if (game->collision_point[0] && game->collision_point[1])
+    {
+      /* Dave should move up at a decreasing rate, then float for a moment */
+      if (game->jump_timer > 16)
+        game->dave_py -= 2;
+
+      if (game->jump_timer >= 12 && game->jump_timer <= 15)
+        game->dave_py -= 1;
+    }
+
+    game->jump_timer--;
+
+    /* Stop jump if timer is zero */
+    if (!game->jump_timer)
+      game->dave_jump = 0;
+  }
 }
 
 /* Scroll the screen when Dave is near the edge
