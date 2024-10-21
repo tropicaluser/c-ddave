@@ -28,10 +28,12 @@ void init_sdl(SDL_Window **window, SDL_Renderer **renderer)
 
 void run_game_loop(struct game_state *game, SDL_Renderer *renderer, struct game_assets *assets)
 {
+  const u32 FRAME_DELAY = 33; // Frame delay in milliseconds
   u32 timer_begin;
   u32 timer_end;
   u32 delay;
 
+  /* Game loop with fixed time step at 30 FPS*/
   while (!game->quit)
   {
     timer_begin = SDL_GetTicks();
@@ -41,8 +43,8 @@ void run_game_loop(struct game_state *game, SDL_Renderer *renderer, struct game_
     render(game, renderer, assets);
 
     timer_end = SDL_GetTicks();
-    delay = 33 - (timer_end - timer_begin);
-    delay = delay > 33 ? 0 : delay;
+    delay = FRAME_DELAY - (timer_end - timer_begin);
+    delay = delay > FRAME_DELAY ? 0 : delay;
     SDL_Delay(delay);
   }
 }
@@ -57,6 +59,10 @@ void init_game(struct game_state *game)
   game->view_x = 0;
   game->view_y = 0;
   game->scroll_x = 0;
+  game->dave_x = 2;
+  game->dave_y = 8;
+  game->dave_px = game->dave_x * TILE_SIZE;
+  game->dave_py = game->dave_y * TILE_SIZE;
 
   /* Load each level from level<xxx>.dat. (see LEVEL.c utility) */
   for (int j = 0; j < 10; j++)
@@ -97,6 +103,7 @@ void init_game(struct game_state *game)
   }
 }
 
+/* Bring in tileset from tile<xxx>.bmp files from original binary (see TILES.C)*/
 void init_assets(struct game_assets *assets, SDL_Renderer *renderer)
 {
   int i;
@@ -116,6 +123,7 @@ void init_assets(struct game_assets *assets, SDL_Renderer *renderer)
   };
 }
 
+/* Checks input and sets flags. First step of the game loop */
 void check_input(struct game_state *game)
 {
   SDL_Event event;
@@ -132,6 +140,8 @@ void check_input(struct game_state *game)
   }
 }
 
+/* Updates world, entities, and handles input flags .
+   Second step of the game loop */
 void update_game(struct game_state *game)
 {
   // overflow check
@@ -164,23 +174,54 @@ void update_game(struct game_state *game)
   }
 }
 
+/* Renders the world. First step of the game loop */
 void render(struct game_state *game, SDL_Renderer *renderer, struct game_assets *assets)
 {
+  /* Clear back buffer with black */
+  SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0x00);
+  SDL_RenderClear(renderer);
+
+  /* Draw world elements */
+  draw_world(game, assets, renderer);
+  draw_dave(game, assets, renderer);
+
+  /* Swaps display buffers (puts above drawing on the screen)*/
+  SDL_RenderPresent(renderer);
+}
+
+/* Render the world */
+void draw_world(struct game_state *game, struct game_assets *assets, SDL_Renderer *renderer)
+{
   SDL_Rect dest;
-  dest.w = 16;
-  dest.h = 16;
+  u8 tile_index;
+  u8 i, j;
 
-  for (int j = 0; j < 10; j++)
+  /* Draw each tile in row-major */
+  for (j = 0; j < 10; j++)
   {
-    dest.y = j * 16;
 
-    for (int i = 0; i < 20; i++)
+    dest.y = j * TILE_SIZE;
+    dest.w = TILE_SIZE;
+    dest.h = TILE_SIZE;
+
+    for (i = 0; i < 20; i++)
     {
-      dest.x = i * 16;
-      uint8_t tile_index = game->level[game->current_level].tiles[j * 100 + game->view_x + i];
+      dest.x = i * TILE_SIZE;
+      tile_index = game->level[game->current_level].tiles[j * 100 + game->view_x + i];
       SDL_RenderCopy(renderer, assets->graphics_tiles[tile_index], NULL, &dest);
     }
   }
+}
 
-  SDL_RenderPresent(renderer);
+/* Render dave */
+void draw_dave(struct game_state *game, struct game_assets *assets, SDL_Renderer *renderer)
+{
+  SDL_Rect dest;
+  
+  dest.x = game->dave_px;
+  dest.y = game->dave_py;
+  dest.w = 20;
+  dest.h = 16;
+
+  SDL_RenderCopy(renderer, assets->graphics_tiles[56], NULL, &dest);
 }

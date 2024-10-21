@@ -15,4 +15,7 @@ void check_input(struct game_state *);
 void update_game(struct game_state *);
 void render(struct game_state *, SDL_Renderer *, struct game_assets *);
 
+void draw_world(struct game_state *, struct game_assets *, SDL_Renderer *);
+void draw_dave(struct game_state *, struct game_assets *, SDL_Renderer *);
+
 #endif // GAME_H
