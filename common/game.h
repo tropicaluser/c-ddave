@@ -16,6 +16,7 @@ void check_input(struct game_state *);
 void update_game(struct game_state *);
 
 void check_collision(struct game_state *);
+void clear_input(struct game_state *);
 void pickup_item(struct game_state *, u8, u8);
 void update_dbullet(struct game_state *);
 void update_ebullet(struct game_state *);
@@ -26,7 +27,7 @@ void fire_monsters(struct game_state *);
 void scroll_screen(struct game_state *);
 void apply_gravity(struct game_state *);
 void update_level(struct game_state *);
-void clear_input(struct game_state *);
+void restart_level(struct game_state *);
 
 void render(struct game_state *, SDL_Renderer *, struct game_assets *);
 

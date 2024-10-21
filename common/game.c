@@ -55,8 +55,10 @@ void init_game(struct game_state *game)
   int j;
   char fname[13];
 
+  // Initialize game state variables
   game->quit = 0;
   game->current_level = 0;
+  game->lives = 3;
   game->view_x = 0;
   game->view_y = 0;
   game->scroll_x = 0;
@@ -349,7 +351,7 @@ void update_dbullet(struct game_state *game)
         {
           /* Dave's bullet hits monster - destroy bullet and monster */
           game->dbullet_px = game->dbullet_py = 0;
-          game->monster[i].type = 0;
+          game->monster[i].dead_timer = 30;
         }
       }
     }
@@ -372,7 +374,21 @@ void update_ebullet(struct game_state *game)
     game->ebullet_px = game->ebullet_py = 0;
 
   if (game->ebullet_px)
+  {
+    u8 grid_x, grid_y;
     game->ebullet_px += game->ebullet_dir * 4;
+
+    grid_x = game->ebullet_px / TILE_SIZE;
+    grid_y = game->ebullet_py / TILE_SIZE;
+
+    /* Compare with Dave's position */
+    if (grid_y == game->dave_y && grid_x == game->dave_x)
+    {
+      /* Monster's bullet hits Dave - remove bullet & dave dead */
+      game->ebullet_px = game->ebullet_py = 0;
+      game->dave_dead_timer = 30;
+    }
+  }
 }
 
 /* Start a new level */
@@ -380,21 +396,8 @@ void start_level(struct game_state *game)
 {
   u8 i;
 
-  /* start position in https://moddingwiki.shikadi.net/wiki/Dangerous_Dave_Level_format
-  Activate monsters based on level current_level counting starts at 0 (i.e Level 3 is case 2) */
-  switch (game->current_level)
-	{
-		case 0: game->dave_x = 2; game->dave_y = 8; break;
-		case 1: game->dave_x = 1; game->dave_y = 8; break;
-		case 2: game->dave_x = 2; game->dave_y = 5; break;
-		case 3: game->dave_x = 1; game->dave_y = 5; break;
-		case 4: game->dave_x = 2; game->dave_y = 8; break;
-		case 5: game->dave_x = 2; game->dave_y = 8; break;
-		case 6: game->dave_x = 1; game->dave_y = 2; break;
-		case 7: game->dave_x = 2; game->dave_y = 8; break;
-		case 8: game->dave_x = 6; game->dave_y = 1; break;
-		case 9: game->dave_x = 2; game->dave_y = 8; break;
-	}
+  /* Reset dave position */
+  restart_level(game);
 
   /* Deactivate monsters */
   for (i = 0; i < 5; i++)
@@ -408,6 +411,7 @@ void start_level(struct game_state *game)
   {
     game->monster[0].type = 89;
     game->monster[0].path_index = 0;
+    game->monster[0].dead_timer = 0;
     game->monster[0].monster_px = 44 * TILE_SIZE;
     game->monster[0].monster_py = 4 * TILE_SIZE;
     game->monster[0].next_px = 0;
@@ -415,6 +419,7 @@ void start_level(struct game_state *game)
 
     game->monster[1].type = 89;
     game->monster[1].path_index = 0;
+    game->monster[1].dead_timer = 0;
     game->monster[1].monster_px = 59 * TILE_SIZE;
     game->monster[1].monster_py = 4 * TILE_SIZE;
     game->monster[1].next_px = 0;
@@ -435,6 +440,7 @@ void start_level(struct game_state *game)
   game->trophy = 0;
   game->gun = 0;
   game->jetpack = 0;
+  game->dave_dead_timer = 0;
   game->check_door = 0;
   game->view_x = 0;
   game->view_y = 0;
@@ -579,7 +585,8 @@ void move_monsters(struct game_state *game)
     struct monster_state *m;
     m = &game->monster[i];
 
-    if (m->type)
+    /* Only move if monster is alive */
+    if (m->type && !m->dead_timer)
     {
       /* Check if monster is at end of path */
       if (!m->next_px && !m->next_py)
@@ -645,7 +652,7 @@ void fire_monsters(struct game_state *game)
     for (i = 0; i < 5; i++)
     {
       /* Monster's shoot if they're active and visible */
-      if (game->monster[i].type && is_visible(game, game->monster[i].monster_px))
+      if (game->monster[i].type && is_visible(game, game->monster[i].monster_px) && !game->monster[i].dead_timer)
       {
         /* Shoot towards Dave */
         game->ebullet_dir = game->dave_px < game->monster[i].monster_px ? -1 : 1;
@@ -730,6 +737,8 @@ void apply_gravity(struct game_state *game)
 /* Handle level-wide events */
 void update_level(struct game_state *game)
 {
+  u8 i;
+
   /* Decrement jetpack delay */
   if (game->jetpack_delay)
     game->jetpack_delay--;
@@ -753,6 +762,67 @@ void update_level(struct game_state *game)
     else
       game->check_door = 0;
   }
+
+  /* Reset level when Dave is dead */
+  if (game->dave_dead_timer)
+  {
+    game->dave_dead_timer--;
+    if (!game->dave_dead_timer)
+    {
+      if (game->lives)
+      {
+        game->lives--;
+        restart_level(game);
+      }
+      else
+        game->quit = 1;
+    }
+  }
+
+  /* Check monster timers */
+  for (i = 0; i < 5; i++)
+  {
+    if (game->monster[i].dead_timer)
+    {
+      game->monster[i].dead_timer--;
+      if (!game->monster[i].dead_timer)
+        game->monster[i].type = 0;
+    }
+    else
+    {
+      /* Check Dave/Monster collisions */
+      if (game->monster[i].type)
+      {
+        if (game->monster[i].monster_x == game->dave_x && game->monster[i].monster_y == game->dave_y)
+        {
+          game->monster[i].dead_timer = 30;
+          game->dave_dead_timer = 30;
+        }
+      }
+    }
+  }
+}
+
+void restart_level(struct game_state *game)
+{
+  /* start position in https://moddingwiki.shikadi.net/wiki/Dangerous_Dave_Level_format
+  Activate monsters based on level current_level counting starts at 0 (i.e Level 3 is case 2) */
+  switch (game->current_level)
+	{
+		case 0: game->dave_x = 2; game->dave_y = 8; break;
+		case 1: game->dave_x = 1; game->dave_y = 8; break;
+		case 2: game->dave_x = 2; game->dave_y = 5; break;
+		case 3: game->dave_x = 1; game->dave_y = 5; break;
+		case 4: game->dave_x = 2; game->dave_y = 8; break;
+		case 5: game->dave_x = 2; game->dave_y = 8; break;
+		case 6: game->dave_x = 1; game->dave_y = 2; break;
+		case 7: game->dave_x = 2; game->dave_y = 8; break;
+		case 8: game->dave_x = 6; game->dave_y = 1; break;
+		case 9: game->dave_x = 2; game->dave_y = 8; break;
+	}
+
+  game->dave_px = game->dave_x * TILE_SIZE;
+  game->dave_py = game->dave_y * TILE_SIZE;
 }
 
 /* Render the world */
@@ -799,6 +869,10 @@ void draw_dave(struct game_state *game, struct game_assets *assets, SDL_Renderer
     if (game->dave_jump || !game->on_ground)
       tile_index = game->last_dir >= 0 ? 67 : 68;
   }
+
+  /* dead sprite */
+  if (game->dave_dead_timer)
+    tile_index = 129;
 
   SDL_RenderCopy(renderer, assets->graphics_tiles[tile_index], NULL, &dest);
 }
@@ -862,7 +936,7 @@ void draw_monsters(struct game_state *game, struct game_assets *assets, SDL_Rend
       dest.w = 20;
       dest.h = 16;
 
-      tile_index = m->type;
+      tile_index = m->dead_timer ? 129 : m->type;
 
       SDL_RenderCopy(renderer, assets->graphics_tiles[tile_index], NULL, &dest);
     }
