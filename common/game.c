@@ -1170,6 +1170,7 @@ u8 is_clear(struct game_state *game, u16 px, u16 py, u8 is_dave)
   grid_x = px / TILE_SIZE;
   grid_y = py / TILE_SIZE;
 
+  /* Don't check outside the room */
   if (grid_x > 99 || grid_y > 9)
     return 1;
 
