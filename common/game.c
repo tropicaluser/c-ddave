@@ -261,6 +261,9 @@ void verify_input(struct game_state *game)
 /* Move dave around the world */
 void move_dave(struct game_state *game)
 {
+  game->dave_x = game->dave_px / TILE_SIZE;
+  game->dave_y = game->dave_py / TILE_SIZE;
+
   /* Move Dave right */
   if (game->dave_right)
   {
@@ -378,6 +381,14 @@ void start_level(struct game_state *game)
    Game view is 20 grid units wide */
 void scroll_screen(struct game_state *game)
 {
+  /* Scroll right if Dave reaches view position 18 */
+  if (game->dave_x - game->view_x >= 18)
+    game->scroll_x = 15;
+
+  /* Scroll left if Dave reaches view position 2 */
+  if (game->dave_x - game->view_x < 2)
+    game->scroll_x = -15;
+
   if (game->scroll_x > 0)
   {
     /* Cap right side at 80 (each level is 100 wide) */
@@ -478,13 +489,16 @@ void draw_world(struct game_state *game, struct game_assets *assets, SDL_Rendere
 void draw_dave(struct game_state *game, struct game_assets *assets, SDL_Renderer *renderer)
 {
   SDL_Rect dest;
+  u8 tile_index;
 
-  dest.x = game->dave_px;
+  dest.x = game->dave_px - game->view_x * TILE_SIZE;
   dest.y = game->dave_py;
   dest.w = 20;
   dest.h = 16;
 
-  SDL_RenderCopy(renderer, assets->graphics_tiles[56], NULL, &dest);
+  tile_index = 56;
+
+  SDL_RenderCopy(renderer, assets->graphics_tiles[tile_index], NULL, &dest);
 }
 
 /* Checks if designated grid has an obstruction or pickup
