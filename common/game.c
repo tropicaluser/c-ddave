@@ -512,6 +512,7 @@ void move_dave(struct game_state *game)
   {
     game->dave_px += 2;
     game->last_dir = 1;
+    game->dave_tick++;
     game->dave_right = 0;
   }
 
@@ -520,6 +521,7 @@ void move_dave(struct game_state *game)
   {
     game->dave_px -= 2;
     game->last_dir = -1;
+    game->dave_tick++;
     game->dave_left = 0;
   }
 
@@ -907,7 +909,14 @@ void draw_dave(struct game_state *game, struct game_assets *assets, SDL_Renderer
   dest.w = 20;
   dest.h = 16;
 
-  tile_index = 56;
+  /* Find the right Dave tile based on his condition */
+  if (!game->last_dir)
+    tile_index = 56;
+  else
+  {
+    tile_index = game->last_dir > 0 ? 53 : 57;
+    tile_index += (game->dave_tick / 5) % 3;
+  }
 
   if (game->dave_jetpack)
     tile_index = game->last_dir >= 0 ? 77 : 80;
@@ -917,9 +926,9 @@ void draw_dave(struct game_state *game, struct game_assets *assets, SDL_Renderer
       tile_index = game->last_dir >= 0 ? 67 : 68;
   }
 
-  /* dead sprite */
+  /* dead sprite - animation */
   if (game->dave_dead_timer)
-    tile_index = 129;
+    tile_index = 129 + (game->tick / 3) % 4;
 
   SDL_RenderCopy(renderer, assets->graphics_tiles[tile_index], NULL, &dest);
 }
@@ -984,6 +993,7 @@ void draw_monsters(struct game_state *game, struct game_assets *assets, SDL_Rend
       dest.h = 16;
 
       tile_index = m->dead_timer ? 129 : m->type;
+      tile_index += (game->tick / 3) % 4;
 
       SDL_RenderCopy(renderer, assets->graphics_tiles[tile_index], NULL, &dest);
     }
