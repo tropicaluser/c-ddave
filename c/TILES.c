@@ -115,23 +115,26 @@ int main(int argc, char *argv[])
 
     tile_index[tile_count] = final_length; /* The last tile ends at EOF.*/
 
-    // Process each tile
+    // Process each tile 
     for (uint32_t current_tile = 0; current_tile < tile_count; current_tile++)
-    {
-        uint32_t current_byte = tile_index[current_tile];
-        uint16_t tile_width, tile_height;
+	{
+		uint32_t current_byte = tile_index[current_tile];
 
-        // Get the dimensions for the current tile
-        get_tile_dimensions(out_data, &current_byte, &tile_width, &tile_height);
+		/* Assume 16x16 */
+		uint16_t tile_width = 16;
+		uint16_t tile_height = 16;
 
-        // Create and fill the surface
+		/* Skip unusual byte */
+		get_tile_dimensions(&current_byte, &tile_width, &tile_height, out_data);
+
+		// Create and fill the surface
         SDL_Surface *surface = create_and_fill_surface(out_data, &current_byte, tile_width, tile_height, palette);
         if (surface)
         {
             // Save the tile to file
             save_tile_to_file(surface, current_tile);
         }
-    }
+	}
 
     printf("Extraction complete.\n");
     return 0;

@@ -36,7 +36,7 @@ extern "C"
   void create_directory(const char *path);
   void read_vga_palette(FILE_TYPE fin, uint32_t vga_pal_addr, uint8_t *palette);
   void get_tile_indices(unsigned char *out_data, uint32_t *tile_index, uint32_t tile_count);
-  void get_tile_dimensions(unsigned char *out_data, uint32_t *current_byte, uint16_t *width, uint16_t *height);
+  void get_tile_dimensions(uint32_t *current_byte, uint16_t *tile_width, uint16_t *tile_height, unsigned char *out_data);
   SDL_Surface *create_and_fill_surface(unsigned char *out_data, uint32_t *current_byte, uint16_t width, uint16_t height, uint8_t *palette);
   void save_tile_to_file(SDL_Surface *surface, uint32_t tile_index);
   uint32_t get_tile_count(unsigned char *out_data);

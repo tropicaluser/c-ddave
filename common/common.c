@@ -122,21 +122,21 @@ void get_tile_indices(unsigned char *out_data, uint32_t *tile_index, uint32_t ti
 #endif
 }
 
-void get_tile_dimensions(unsigned char *out_data, uint32_t *current_byte, uint16_t *width, uint16_t *height)
+void get_tile_dimensions(uint32_t *current_byte, uint16_t *tile_width, uint16_t *tile_height, unsigned char *out_data)
 {
-    // Assume default dimensions
-    *width = 16;
-    *height = 16;
+    /* Skip unusual byte */
+    if (*current_byte > 65280)
+        (*current_byte)++;
 
-    // Read dimensions if applicable
+    /* Read first 4 bytes for possible custom dimensions */
     if (out_data[*current_byte + 1] == 0 && out_data[*current_byte + 3] == 0)
     {
         if (out_data[*current_byte] > 0 && out_data[*current_byte] < 0xBf &&
             out_data[*current_byte + 2] > 0 && out_data[*current_byte + 2] < 0x64)
         {
-            *width = out_data[*current_byte];
-            *height = out_data[*current_byte + 2];
-            *current_byte += 4; // Move past the dimensions
+            *tile_width = out_data[*current_byte];
+            *tile_height = out_data[*current_byte + 2];
+            *current_byte += 4;
         }
     }
 }
