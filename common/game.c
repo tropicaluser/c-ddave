@@ -145,6 +145,7 @@ void check_input(struct game_state *game)
    Second step of the game loop */
 void update_game(struct game_state *game)
 {
+  check_collision(game);
   verify_input(game);
   move_dave(game);
   scroll_screen(game);
@@ -166,19 +167,36 @@ void render(struct game_state *game, SDL_Renderer *renderer, struct game_assets 
   SDL_RenderPresent(renderer);
 }
 
+/* Updates dave's collision point state */
+void check_collision(struct game_state *game)
+{
+  /* Updates 8 points around Dave */
+  game->collision_point[0] = is_clear(game, game->dave_px + 4, game->dave_py - 1);
+  game->collision_point[1] = is_clear(game, game->dave_px + 10, game->dave_py - 1);
+  game->collision_point[2] = is_clear(game, game->dave_px + 11, game->dave_py + 4);
+  game->collision_point[3] = is_clear(game, game->dave_px + 11, game->dave_py + 12);
+  game->collision_point[4] = is_clear(game, game->dave_px + 10, game->dave_py + 16);
+  game->collision_point[5] = is_clear(game, game->dave_px + 4, game->dave_py + 16);
+  game->collision_point[6] = is_clear(game, game->dave_px + 3, game->dave_py + 12);
+  game->collision_point[7] = is_clear(game, game->dave_px + 3, game->dave_py + 4);
+
+  /* Is dave on the ground? */
+  game->on_ground = (!game->collision_point[4] && !game->collision_point[5]);
+}
+
 /* Check if keyboard input is valid. If so, set action variable */
 void verify_input(struct game_state *game)
 {
   /* Dave can move right if there are no obstructions */
-  if (game->try_right)
+  if (game->try_right && game->collision_point[2] && game->collision_point[3])
     game->dave_right = 1;
 
   /* Dave can move left if there are no obstructions */
-  if (game->try_left)
+  if (game->try_left && game->collision_point[6] && game->collision_point[7])
     game->dave_left = 1;
 
   /* Dave can jump */
-  if (game->try_jump)
+  if (game->try_jump && game->on_ground && game->collision_point[0] && game->collision_point[1])
     game->dave_jump = 1;
 }
 
@@ -277,4 +295,38 @@ void draw_dave(struct game_state *game, struct game_assets *assets, SDL_Renderer
   dest.h = 16;
 
   SDL_RenderCopy(renderer, assets->graphics_tiles[56], NULL, &dest);
+}
+
+/* Checks if designated grid has an obstruction or pickup
+   1 means clear */
+u8 is_clear(struct game_state *game, u16 px, u16 py)
+{
+  u8 grid_x;
+  u8 grid_y;
+  u8 type;
+
+  grid_x = px / TILE_SIZE;
+  grid_y = py / TILE_SIZE;
+
+  if (grid_x > 99 || grid_y > 9)
+    return 1;
+
+  type = game->level[game->current_level].tiles[grid_y * 100 + grid_x];
+
+  if (type == 1) { return 0; }
+	if (type == 3) { return 0; }
+	if (type == 5) { return 0; }
+	if (type == 15) { return 0; }
+	if (type == 16) { return 0; }
+	if (type == 17) { return 0; }
+	if (type == 18) { return 0; }
+	if (type == 19) { return 0; }
+	if (type == 21) { return 0; }
+	if (type == 22) { return 0; }
+	if (type == 23) { return 0; }
+	if (type == 24) { return 0; }
+	if (type == 29) { return 0; }
+	if (type == 30) { return 0; }
+
+  return 1;
 }
